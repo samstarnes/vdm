@@ -1,2 +1,4 @@
-# vdm
-vdl
+# VDM - Video Download Manager
+
+WIP
+
