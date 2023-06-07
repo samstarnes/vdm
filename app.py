@@ -189,7 +189,7 @@ def download(url, args, cutout, output_base):
     # Step 06 - Ensure max_filename_length is not exceeded
     # Step 07 - Download video to videos folder
     # Step 08 - Increment Download number
-    # Step 09 - Download JSON file to JSON folder
+    # Step 09 - Download JSON file to JSON folder (in compliance with Step 7 currently)
     # Step 10 - Save JSON output to file
     # Step 11 - Download the thumbnail to the thumbnails folder
     # Step 12 - Load the JSON file
@@ -324,11 +324,11 @@ def download(url, args, cutout, output_base):
 
     # Extract the information
         video_info = {
-  		      'index': download_number,
+            'index': download_number,
             'id': data['id'],
             'title': data['title'],
             'date_posted': data['upload_date'],
-			      'archive_date': datetime.now(), # BSON datetime object, date-based queries
+            'archive_date': datetime.now(), # BSON datetime object, date-based queries
             'user': data['uploader'],
             'video_url': data['webpage_url'],
             'length': data['duration'],
@@ -346,7 +346,7 @@ def download(url, args, cutout, output_base):
     # Step 14
     # Get the filename of the downloaded file from the JSON output
     downloaded_video_filename = voutput # data['_filename']
-		# After the download is complete, get the actual resolution of the downloaded video
+    # After the download is complete, get the actual resolution of the downloaded video
     actual_resolution = get_video_resolution(downloaded_video_filename)
     # Update the 'resolution' field in the video_info dictionary
     video_info['resolution'] = actual_resolution
