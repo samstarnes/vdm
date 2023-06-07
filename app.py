@@ -305,7 +305,7 @@ def download(url, args, cutout, output_base):
         data = json.load(f)
             # print(f"Loaded data: {data}")
 
-        # Step 13
+    # Step 13
             #try:
         print(f"index: {download_number}")
         print(f"id: {data['id']}")
@@ -341,12 +341,10 @@ def download(url, args, cutout, output_base):
     #except json.JSONDecodeError as e:
         #print(f"Error loading JSON data from {json_output_filename}: as {e}")
 
-
-
     # Step 14
     # Get the filename of the downloaded file from the JSON output
     downloaded_video_filename = voutput # data['_filename']
-    # After the download is complete, get the actual resolution of the downloaded video
+		# After the download is complete, get the actual resolution of the downloaded video
     actual_resolution = get_video_resolution(downloaded_video_filename)
     # Update the 'resolution' field in the video_info dictionary
     video_info['resolution'] = actual_resolution
