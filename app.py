@@ -300,16 +300,16 @@ def download(url, args, cutout, output_base):
     # Load the JSON data
     #try:
     with open(json_output_filename) as f:
-        print("Contents of JSON file", f.read())
-        f.seek(0) # Reset the file pointer to the beginning
+        # print("Contents of JSON file", f.read())
+        # f.seek(0) # Reset the file pointer to the beginning
         data = json.load(f)
             # print(f"Loaded data: {data}")
-						
-    # Step 13
+
+        # Step 13
             #try:
         print(f"index: {download_number}")
         print(f"id: {data['id']}")
-        print(f"title: { data['title']}")
+        print(f"title: {data['title']}")
         print(f"date_posted: {data['upload_date']}")
         print(f"archive_date: {datetime.now()}")
         print(f"user: {data['uploader']}")
@@ -337,7 +337,7 @@ def download(url, args, cutout, output_base):
             'aspect_ratio': None,
             'thumbnail': f'{directory}/thumbnails/{output}.jpg'
         }
-        print(f"Extracted video_info: {video_info}")
+    print(f"Extracted video_info: video_info[0]")
     #except json.JSONDecodeError as e:
         #print(f"Error loading JSON data from {json_output_filename}: as {e}")
 
