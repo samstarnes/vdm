@@ -177,7 +177,8 @@ def get_video_resolution(filename):
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
     command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', filename]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, _ = process.communicate()
+    output, err = process.communicate()
+    print(f"gvr: {err}")
     return output.decode('utf-8').strip()
 
 def download(url, args, cutout, output_base):
@@ -189,7 +190,7 @@ def download(url, args, cutout, output_base):
     # Step 06 - Ensure max_filename_length is not exceeded
     # Step 07 - Download video to videos folder
     # Step 08 - Increment Download number
-    # Step 09 - Download JSON file to JSON folder (in compliance with Step 7 currently)
+    # Step 09 - Download JSON file to JSON folder
     # Step 10 - Save JSON output to file
     # Step 11 - Download the thumbnail to the thumbnails folder
     # Step 12 - Load the JSON file
@@ -222,7 +223,8 @@ def download(url, args, cutout, output_base):
     with lock:
         info_command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '--skip-download', '--print-json', url]
         info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
-        info_result, _ = info_process.communicate()
+        info_result, err = info_process.communicate()
+        print(f"S3E: {err}")
 
     try:
         info = json.loads(info_result)
@@ -264,7 +266,8 @@ def download(url, args, cutout, output_base):
         command.extend(['--postprocessor-args', cutout_args])
     with lock:
         download_process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
-        result, _ = download_process.communicate()
+        result, err = download_process.communicate()
+        print(f"S7E: {err}")
     # Step 8
         # Increase download number 
         download_number = update_statistics(url)[0]
@@ -294,52 +297,59 @@ def download(url, args, cutout, output_base):
     tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '--convert-thumbnails', 'jpg', '-o', f'{directory}/thumbnails/{output}', url]
     with lock:
         download_process = subprocess.Popen(tmbs, stdout=subprocess.PIPE, text=True)
-        result, _ = download_process.communicate()
+        result, err = download_process.communicate()
+        print(f"S11E: {err}")
 
     # Step 12
     # Load the JSON data
     #try:
-    with open(json_output_filename) as f:
+    try:
+        with open(json_output_filename, 'r') as f:
         # print("Contents of JSON file", f.read())
         # f.seek(0) # Reset the file pointer to the beginning
-        data = json.load(f)
+            data = json.load(f)
             # print(f"Loaded data: {data}")
+        #print(f"Loaded data: {data}")
+    except Exception as e:
+        print(f"Error loading JSON data from {json_output_filename}: as {e}")
+        data = {}
 
     # Step 13
             #try:
-        print(f"index: {download_number}")
-        print(f"id: {data['id']}")
-        print(f"title: {data['title']}")
-        print(f"date_posted: {data['upload_date']}")
-        print(f"archive_date: {datetime.now()}")
-        print(f"user: {data['uploader']}")
-        print(f"video_url: {data['webpage_url']}")
-        print(f"length: {data['duration']}")
-        print(f"filename: {data['_filename']}")
-        print(f"resolution: None")
-        print(f"aspect_ratio: None")
-        print(f"thumbnail: {directory}/thumbnails/{output}.jpg")
-            #except KeyError as e:
-                #print(f"KeyError: {e}")
+    print(f"index: {download_number}")
+    print(f"id: {data['id']}")
+    print(f"title: {data['title']}")
+    print(f"date_posted: {data['upload_date']}")
+    print(f"archive_date: {datetime.now()}")
+    print(f"user: {data['uploader']}")
+    print(f"video_url: {data['webpage_url']}")
+    print(f"length: {data['duration']}")
+    #print(f"filename: {data['_filename']}")
+    print(f"resolution: None")
+    print(f"aspect_ratio: None")
+    print(f"thumbnail: {directory}/thumbnails/{output}.jpg")
 
     # Extract the information
+    try:
         video_info = {
-            'index': download_number,
-            'id': data['id'],
-            'title': data['title'],
-            'date_posted': data['upload_date'],
-            'archive_date': datetime.now(), # BSON datetime object, date-based queries
-            'user': data['uploader'],
-            'video_url': data['webpage_url'],
-            'length': data['duration'],
-            'filename': data['_filename'],
+  		      'index': download_number,
+            'id': data.get('id', 'N/A'),
+            'title': data.get('title', 'N/A'),
+            'date_posted': data.get('upload_date', 'N/A'),
+			      'archive_date': datetime.now(), # BSON datetime object, date-based queries
+            'user': data.get('uploader', 'N/A'),
+            'video_url': data.get('webpage_url', 'N/A'),
+            'length': data.get('duration', 'N/A'),
+            'filename': data.get('_filename', 'N/A'),
             'resolution': None,
             'aspect_ratio': None,
             'thumbnail': f'{directory}/thumbnails/{output}.jpg'
         }
-    print(f"Extracted video_info: video_info[0]")
-    #except json.JSONDecodeError as e:
-        #print(f"Error loading JSON data from {json_output_filename}: as {e}")
+        # print(f"Extracted video_info: {video_info}")
+        print("FUCK")
+    except Exception as e:
+        print(f"Error extracting video info: {e}")
+        video_info = {}
 
     # Step 14
     # Get the filename of the downloaded file from the JSON output
