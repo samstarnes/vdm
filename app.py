@@ -287,7 +287,7 @@ def download(url, args, cutout, output_base):
 
     # Step 10
     # Save JSON output to a file (2/3 files)
-    json_output_filename = f'{directory}/json/{output}.json'
+    json_output_filename = f'{directory}/json/{sanitize_filename(output)}.json'
     # print("File size:", os.path.getsize(json_output_filename))
     with open(json_output_filename, 'w') as json_file:
         json_file.write(result) # info_result
@@ -303,16 +303,15 @@ def download(url, args, cutout, output_base):
     # Step 12
     # Load the JSON data
     #try:
-    try:
-        with open(json_output_filename, 'r') as f:
+    with open(json_output_filename, 'r') as f:
         # print("Contents of JSON file", f.read())
         # f.seek(0) # Reset the file pointer to the beginning
-            data = json.load(f)
+        data = json.load(f)
             # print(f"Loaded data: {data}")
         #print(f"Loaded data: {data}")
-    except Exception as e:
-        print(f"Error loading JSON data from {json_output_filename}: as {e}")
-        data = {}
+    #except Exception as e:
+    #    print(f"Error loading JSON data from {json_output_filename}: as {e}")
+    #    data = {}
 
     # Step 13
             #try:
@@ -327,29 +326,28 @@ def download(url, args, cutout, output_base):
     #print(f"filename: {data['_filename']}")
     print(f"resolution: None")
     print(f"aspect_ratio: None")
-    print(f"thumbnail: {directory}/thumbnails/{output}.jpg")
+    print(f"thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.jpg")
 
     # Extract the information
-    try:
-        video_info = {
-  		      'index': download_number,
-            'id': data.get('id', 'N/A'),
-            'title': data.get('title', 'N/A'),
-            'date_posted': data.get('upload_date', 'N/A'),
-			      'archive_date': datetime.now(), # BSON datetime object, date-based queries
-            'user': data.get('uploader', 'N/A'),
-            'video_url': data.get('webpage_url', 'N/A'),
-            'length': data.get('duration', 'N/A'),
-            'filename': data.get('_filename', 'N/A'),
-            'resolution': None,
-            'aspect_ratio': None,
-            'thumbnail': f'{directory}/thumbnails/{output}.jpg'
-        }
+    #try:
+    video_info = {
+  	    'index': download_number,
+        'id': data.get('id', 'N/A'),
+        'title': data.get('title', 'N/A'),
+        'date_posted': data.get('upload_date', 'N/A'),
+			  'archive_date': datetime.now(), # BSON datetime object, date-based queries
+        'user': data.get('uploader', 'N/A'),
+        'video_url': data.get('webpage_url', 'N/A'),
+        'length': data.get('duration', 'N/A'),
+        'filename': data.get('_filename', 'N/A'),
+        'resolution': None,
+        'aspect_ratio': None,
+        'thumbnail': f'{directory}/thumbnails/{sanitize_filename(output)}.jpg'
+    }
         # print(f"Extracted video_info: {video_info}")
-        print("FUCK")
-    except Exception as e:
-        print(f"Error extracting video info: {e}")
-        video_info = {}
+    #except Exception as e:
+    #    print(f"Error extracting video info: {e}")
+    #    video_info = {}
 
     # Step 14
     # Get the filename of the downloaded file from the JSON output
@@ -403,7 +401,9 @@ def download(url, args, cutout, output_base):
         print(f"Exception args: {e.args}")
         print(f"Exception: {e}")
     # Step 19
-    return info, None # Return the info variable and no error
+    return info, err # Return the info variable and no error
+    print(f"Info: {info}")
+    print(f"Error: {err}")
 
     # Print the output of the yt-dlp command
     # print('yt-dlp result:', result)
