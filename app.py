@@ -288,6 +288,7 @@ def download(url, args, cutout, output_base):
     # Step 10
     # Save JSON output to a file (2/3 files)
     json_output_filename = f'{directory}/json/{sanitize_filename(output)}.json'
+		print({json_output_filename})
     # print("File size:", os.path.getsize(json_output_filename))
     with open(json_output_filename, 'w') as json_file:
         json_file.write(result) # info_result
