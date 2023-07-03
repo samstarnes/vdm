@@ -153,11 +153,9 @@ def register():
         username = request.form['username']
         password = request.form['password']
         # Validate the username and password
-        # This is a very basic validation. In a real application, you would want to check if the username already exists, and you would want to hash the password before storing it.
         if not username or not password:
             return 'Invalid username or password', 400
         # Store the username and password
-        # In a real application, you would want to store this information in a database.
         session['username'] = username
         session['password'] = password
         return redirect(url_for('home')) # redirect to the home page after registration
