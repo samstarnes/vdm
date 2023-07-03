@@ -198,10 +198,10 @@ def update_statistics(url):
     return stats['total_downloads'], stats['domains'][domain]
 
 def sanitize_filename(filename):
-    invalid_chars = '<>:"/\\|?*#;^%~`'
+    invalid_chars = '<>:"/\\|?*#;^%~`,'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
-    logging.info('Returning filename from sanitize_filename:', filename)
+    logging.info('Returning filename from sanitize_filename: %s', filename)
     return filename
 
 def get_video_resolution(filename):
@@ -278,7 +278,7 @@ def download(url, args, cutout, output_base):
     logging.info('Step 3:')
     # Run yt-dlp to get video title
     with lock:
-        info_command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '--skip-download', '--print-json', url]
+        info_command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '--skip-download', '--print-json', '--cookies', 'cookies.txt', url]
         info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
         info_result, err = info_process.communicate()
         print(f"S3E: {err}")
@@ -287,7 +287,7 @@ def download(url, args, cutout, output_base):
         logging.info('Step 3: Set info variable in Step 3')
     except json.JSONDecodeError:
         print('yt-dlp output is not valid JSON:', info_result)
-        logging.error('Step 3: Failed to download:', url)
+        logging.error(f'Step 3: Failed to download:` {url}')
         return None, f"Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
 
     #############################################################
@@ -338,17 +338,24 @@ def download(url, args, cutout, output_base):
         cutout_args = f'"-ss {cutout[0]} -to {cutout[1]}"'
         command.extend(['--postprocessor-args', cutout_args])
     with lock:
-        download_process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
-        result, err = download_process.communicate()
-        print(f"S7E: {err}")
+        try:
+            logging.info('Step 7: Try')
+            result = subprocess.run(command, stdout=subprocess.PIPE, text=True, check=True)
+            logging.info('Step 7: Result')
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Download failed with error: {e}")
+            return f"Download failed with error: {e}", 500
+            #download_process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+            #result, err = download_process.communicate()
+    print(f"S7E: {result.stderr}")
 
     #############################################################
     # Step 8 ####################################################
     #############################################################
-        logging.info('Step 8: Increasing download number in update_statistics')
-        # Increase download number 
-        download_number = update_statistics(url)[0]
-        voutput = f'{directory}/videos/{output}.%(ext)s'
+    logging.info('Step 8: Increasing download number in update_statistics')
+    # Increase download number 
+    download_number = update_statistics(url)[0]
+    voutput = f'{directory}/videos/{output}.%(ext)s'
 
     #############################################################
     # Step 9 ####################################################
@@ -370,7 +377,7 @@ def download(url, args, cutout, output_base):
     print({json_output_filename})
     logging.info('Step 10: Attempt to open file and write json_file info in Step 10')
     with open(json_output_filename, 'w') as json_file:
-        json_file.write(result) # info_result
+        json_file.write(result.stdout) # info_result
         logging.info('Step 10: Written json_file info in Step 10')
 
     #############################################################
@@ -403,19 +410,19 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 13 ###################################################
     #############################################################
-    logging.info('Step 13:')
-    logging.info('Step 13: index:', f"{download_number}")
-    logging.info('Step 13: id:', f"{data['id']}")
-    logging.info('Step 13: title:', f"{data['title']}")
-    logging.info('Step 13: date_posted:', f"{data['upload_date']}")
-    logging.info('Step 13: archive_date:', f"{datetime.now()}")
-    logging.info('Step 13: user:', f"{data['uploader']}")
-    logging.info('Step 13: video_url:', f"{data['webpage_url']}")
-    logging.info('Step 13: length:', f"{data['duration']}")
-    logging.info('Step 13:', f"{data['_filename']}")
-    logging.info('Step 13: resolution: unknown')
-    logging.info('Step 13: aspect_ratio: unknown')
-    logging.info('Step 13: thumbnail:', f"{directory}/thumbnails/{sanitize_filename(output)}.jpg")
+    logging.info(f'Step 13:')
+    logging.info(f'Step 13: index: {download_number}')
+    logging.info(f'Step 13: id: {data["id"]}')
+    logging.info(f'Step 13: title: {data["title"]}')
+    logging.info(f'Step 13: date_posted: {data["upload_date"]}')
+    logging.info(f'Step 13: archive_date: {datetime.now()}')
+    logging.info(f'Step 13: user: {data["uploader"]}')
+    logging.info(f'Step 13: video_url: {data["webpage_url"]}')
+    logging.info(f'Step 13: length: {data["duration"]}')
+    logging.info(f'Step 13: filename: {data["_filename"]}')
+    logging.info(f'Step 13: resolution: unknown')
+    logging.info(f'Step 13: aspect_ratio: unknown')
+    logging.info(f'Step 13: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.jpg')
 
     # Extract the information
     #try:
@@ -558,6 +565,13 @@ def download_videos():
     # video_dir = f'{directory}/videos/{username}'
     urls = [url.strip() for url in request.form['url'].split('\n')]
     args = request.form['args'].split(' ')
+    # Get the path to the cookies file from the form
+    cookies_file_path = request.form.get('cookies_file', '')
+    # If no cookies file was provided, use the default cookies file
+    default_cookies_file_path = 'cookies.txt'
+    if not cookies_file_path:
+        cookies_file_path = default_cookies_file_path
+    args.extend(['--cookies', cookies_file_path])
     cutout = request.form['cutout'].split('-')
     output_base = request.form['output']
     errors = []
