@@ -153,6 +153,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         # Validate the username and password
+        # hash the password before storing it.
         if not username or not password:
             return 'Invalid username or password', 400
         # Store the username and password
@@ -342,6 +343,10 @@ def download(url, args, cutout, output_base):
             logging.info('Step 7: Result')
         except subprocess.CalledProcessError as e:
             logging.error(f"Download failed with error: {e}")
+            download_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result, err = download_process.communicate()
+            if download_process.returncode != 0:
+                logging.info(f"From subprocess.Popen: {err}")
             return f"Download failed with error: {e}", 500
             #download_process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
             #result, err = download_process.communicate()
