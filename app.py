@@ -99,6 +99,8 @@ logging.info('Removing ffprobe zip')
 # Make ffprobe executable
 os.chmod('/app/ffprobe', 0o755)
 logging.info('Setting permissions to 0755')
+# Set cookies file path variable, default is main directory /app 
+defcookiesfp = 'cookies.txt'
 
 # Set up Flask-Login
 login_manager = LoginManager()
@@ -586,10 +588,10 @@ def download_videos():
     # Get the path to the cookies file from the form
     cookies_file_path = request.form.get('cookies_file', '')
     # If no cookies file was provided, use the default cookies file
-    default_cookies_file_path = 'cookies.txt'
+    defcookiesfp = 'cookies.txt'
     if not cookies_file_path:
-        cookies_file_path = default_cookies_file_path
-    args.extend(['--cookies', cookies_file_path])
+        cookiesfp = defcookiesfp
+    args.extend(['--cookies', cookiesfp])
     cutout = request.form['cutout'].split('-')
     output_base = request.form['output']
     errors = []
