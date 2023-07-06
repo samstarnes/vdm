@@ -60,6 +60,7 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # - design new file structure ✅
 # - connect mongodb ✅
 
+bdir = '/srv/docker/anomaly-ytdlp/'
 app.secret_key = 'zu7t101tyNVBExIw2FzHx3R4elulSG3qPC1WqpkzSV2CNQG93Rh1FFcat4SMgphw'
 # Create a lock
 lock = Lock()
@@ -209,13 +210,21 @@ def get_video_resolution(filename):
     #    time.sleep(1)
     #    logging.info('os.path.exists1: %s, filename: %s', os.path.exists(f'"/srv/docker/anomaly-ytdlp/{filename}"'), filename)
     #    logging.info('os.path.exists2: %s', f'"/srv/docker/anomaly-ytdlp/{filename}"')
+    logging.info('Step 14: Grabbed fnprobe variable: %s ', fnprobe)
+    gvrfp = os.path.abspath(filename)
+    logging.info('Step 14: Processing filename: %s', filename)
+    logging.info('Step 14: Processing filename cmd: %s', f'"{filename}"')
+    logging.info('Step 14: Processing absolute path file: %s', gvrfp)
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
+    logging.info('Step 14: ffprobe found at: %s', ffprobepath)
     logging.info('Step 14: ffprobe in get_video_resolution')
-    command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', filename]
+    command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', fnprobe]
     logging.info('Step 14: Setting command variable in get_video_resolution')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     logging.info('Step 14: process in get_video_resolution')
     output, err = process.communicate()
+    if err:
+        logging.error('ffprobe error: %s', err.decode('utf-8'))
     logging.info('Step 14: output via get_video_resolution')
     return output.decode('utf-8').strip()
 
@@ -277,6 +286,8 @@ def download(url, args, cutout, output_base):
     logging.info('Step 3:')
     # Run yt-dlp to get video title
     with lock:
+        ddir = os.getcwd()
+        logging.info(f"ddir: {ddir}")
         info_command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '--skip-download', '--print-json', '--cookies', 'cookies.txt', url]
         info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
         info_result, err = info_process.communicate()
@@ -296,9 +307,11 @@ def download(url, args, cutout, output_base):
     # Use the video title as the output name if no output name was provided
     if not output_base:
         output = sanitize_filename(info['title'])
+        fulltitle = output
         logging.info('Step 4: Set output variable in Step 4')
     else:
         output = output_base
+        fulltitle = output
         logging.warning('Step 4: Setting output to output_base in Step 4')
     #############################################################
     # Step 5 ####################################################
@@ -319,17 +332,17 @@ def download(url, args, cutout, output_base):
     # Ensure filename does not exceed maximum length
     max_filename_length = 255
     # Account for the length of the longest extension (.json)
-    max_base_filename_length = max_filename_length - len('.json')
+    max_base_filename_length = max_filename_length - len('/thumbnails/') - len('.json')
     if len(output) > max_base_filename_length:
         # Truncate filename and add an ellipsis to indicate truncation
-        output = output[:max_base_filename_length - 3] + '...'
+        output = output[:max_base_filename_length - 50] + '...'
 
     #############################################################
     # Step 7 ####################################################
     #############################################################
     logging.info('Step 7:')
     # Run yt-dlp to download the video (1/3 files)
-    command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '-o', f'{directory}/videos/{output}.%(ext)s', '--print-json', url]
+    command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '-o', f'{directory}/videos/{output}.%(ext)s', '--print-json', '--cookies', 'cookies.txt', url]
     if args and args[0] != '':
         command.extend(args)
     cutout = request.form['cutout'].split('-')
@@ -388,7 +401,7 @@ def download(url, args, cutout, output_base):
     #############################################################
     logging.info('Step 11:')
     # Run yt-dlp to download the thumbnail (3/3 files)
-    tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '--convert-thumbnails', 'jpg', '-o', f'{directory}/thumbnails/{output}', url]
+    tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '--convert-thumbnails', 'jpg', '-o', f'{directory}/thumbnails/{output}', '--cookies', 'cookies.txt', url]
     with lock:
         download_process = subprocess.Popen(tmbs, stdout=subprocess.PIPE, text=True)
         result, err = download_process.communicate()
@@ -416,7 +429,8 @@ def download(url, args, cutout, output_base):
     logging.info(f'Step 13:')
     logging.info(f'Step 13: index: {download_number}')
     logging.info(f'Step 13: id: {data["id"]}')
-    logging.info(f'Step 13: title: {data["title"]}')
+    #logging.info(f'Step 13: title: {data["title"]}')
+    logging.info(f'Step 13: title: {fulltitle}')
     logging.info(f'Step 13: date_posted: {data["upload_date"]}')
     logging.info(f'Step 13: archive_date: {datetime.now()}')
     logging.info(f'Step 13: user: {data["uploader"]}')
@@ -428,20 +442,21 @@ def download(url, args, cutout, output_base):
     logging.info(f'Step 13: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.jpg')
 
     # Extract the information
-    #try:
-
+    # Also set the default filename to grab the aspect_ratio/resolution
+    fnprobe = f'{data["_filename"]}'
     video_info = {
         'index': download_number,
         'id': data.get('id', "unknown"),
-        'title': data.get('title', "unknown"),
+        #'title': data.get('title', "unknown"),
+        'title': f'{fulltitle}',
         'date_posted': data.get('upload_date', "unknown"),
         'archive_date': datetime.now(), # BSON datetime object, date-based queries
         'user': data.get("uploader", "unknown"),
         'video_url': data.get('webpage_url', "unknown"),
         'length': format_duration(data.get('duration', "unknown")),
-        'filename': f'"/srv/docker/anomaly-ytdlp/{data.get("_filename", "unknown")}"',
-        'thumbnail': f'"{directory}/thumbnails/{sanitize_filename(output)}.jpg"',
-        'json_file': f'"{directory}/json/{sanitize_filename(output)}.json"',
+        'filename': f'{bdir}{data.get("_filename", "unknown")}',
+        'thumbnail': f'{bdir}{directory}/thumbnails/{sanitize_filename(output)}.jpg',
+        'json_file': f'{bdir}{directory}/json/{sanitize_filename(output)}.json',
         'resolution': "unknown",
         'aspect_ratio': "unknown"
     }
