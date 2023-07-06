@@ -212,7 +212,7 @@ def get_video_resolution(filename):
     #    time.sleep(1)
     #    logging.info('os.path.exists1: %s, filename: %s', os.path.exists(f'"/srv/docker/anomaly-ytdlp/{filename}"'), filename)
     #    logging.info('os.path.exists2: %s', f'"/srv/docker/anomaly-ytdlp/{filename}"')
-    logging.info('Step 14: Grabbed fnprobe variable: %s ', fnprobe)
+    # logging.info('Step 14: Grabbed fnprobe variable: %s ', fnprobe)
     gvrfp = os.path.abspath(filename)
     logging.info('Step 14: Processing filename: %s', filename)
     logging.info('Step 14: Processing filename cmd: %s', f'"{filename}"')
@@ -220,7 +220,7 @@ def get_video_resolution(filename):
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
     logging.info('Step 14: ffprobe found at: %s', ffprobepath)
     logging.info('Step 14: ffprobe in get_video_resolution')
-    command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', fnprobe]
+    command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', filename]
     logging.info('Step 14: Setting command variable in get_video_resolution')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     logging.info('Step 14: process in get_video_resolution')
@@ -428,7 +428,7 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 13 ###################################################
     #############################################################
-    logging.info(f'Step 13:')
+    logging.info(f'Step 13: Start of video_info object')
     logging.info(f'Step 13: index: {download_number}')
     logging.info(f'Step 13: id: {data["id"]}')
     #logging.info(f'Step 13: title: {data["title"]}')
@@ -445,7 +445,8 @@ def download(url, args, cutout, output_base):
 
     # Extract the information
     # Also set the default filename to grab the aspect_ratio/resolution
-    fnprobe = f'{data["_filename"]}'
+    fnprobe = data['_filename']
+    logging.info(f'Step 13: fnprobe: {fnprobe}')
     video_info = {
         'index': download_number,
         'id': data.get('id', "unknown"),
@@ -488,7 +489,8 @@ def download(url, args, cutout, output_base):
     downloaded_video_filename = video_info['filename']
     logging.info('Step 14: Set downloaded_video_filename from voutput')
     # After the download is complete, get the actual resolution of the downloaded video
-    actual_resolution = get_video_resolution(downloaded_video_filename)
+    # actual_resolution = get_video_resolution(downloaded_video_filename)
+    actual_resolution = get_video_resolution(fnprobe)
     logging.info('Step 14: Set actual_resolution from get_video_resolution function using downloaded_video_filename')
     # Update the 'resolution' field in the video_info dictionary
     if (actual_resolution):
