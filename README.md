@@ -8,7 +8,7 @@
 
 #### 1) First modify the `cookies.txt` file in netscape format with *your* cookies.
 
-#### 2) ` sudo docker build . `
+#### 2) ` docker build . `
 
 ## Appearance (WIP - will change over time)
 
