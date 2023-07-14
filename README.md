@@ -10,7 +10,7 @@
 
 #### 2) ` sudo docker build . `
 
-## Appearance
+## Appearance (WIP - will change over time)
 
 ![FireShot Webpage Capture 015 - 'YT-DLP Downloader' - 10 0 0 4](https://github.com/samstarnes/vdm/assets/19420604/b28d7f02-2a88-4eb3-8361-825a3bf1ff4b)
 
