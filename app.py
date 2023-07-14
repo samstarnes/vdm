@@ -1,6 +1,8 @@
 import platform; print(platform.python_version())
 import os
+import re
 import sys
+import math
 import time
 import json
 import shutil
@@ -15,14 +17,15 @@ from threading import Lock
 from datetime import datetime
 from pymongo import MongoClient
 from urllib.parse import urlparse
+from urllib.parse import quote, unquote
 from bson.objectid import ObjectId
-from flask import Flask, request, render_template, session, redirect, url_for
+from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 # may use at some point
 # import glob
 # import concurrent.futures
 # from threading import Timer
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 # Set system default path to /app
 os.environ['PATH'] += os.pathsep + '/app'
 # Set up logging
@@ -36,15 +39,27 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
     # logging.critical()
     
 # Things left to add
+
+# High Priority
+# - Stylize home page ✅
+# - create video player page (pull data with _id as URL)
+# - customizable grid format for number of items
+# - customizable number of items displayed, normal vs reverse order
+# - customizable items ordered by duration, size, download date (ID), posted date 
+# - configurable public item automatic deletion, cookie file, themes
+
+# Low Priority
 # - multi-user login 
-# - customizable grid format for home page, 5x5, 7x7 etc
-# - customizable number of items displayed 
 # - search function 
-# - filter function 
-# - grab thumbnails ✅
-# - create video player page 
+# - filter function
+# - sanitize URLs for useless cookies for global mongoDB pool ✅
+
+# Completed
 # - design new file structure ✅
 # - connect mongodb ✅
+# - grab thumbnails ✅
+
+
 
 bdir = '/srv/docker/anomaly-ytdlp/'
 app.secret_key = 'zu7t101tyNVBExIw2FzHx3R4elulSG3qPC1WqpkzSV2CNQG93Rh1FFcat4SMgphw'
@@ -185,7 +200,7 @@ def update_statistics(url):
     return stats['total_downloads'], stats['domains'][domain]
 
 def sanitize_filename(filename):
-    invalid_chars = '<>:"/\\|?*#;^%~`,'
+    invalid_chars = '!*()[].\'%&@$/<>:"/\\|?*#;^%~`,'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
     logging.info('Returning filename from sanitize_filename: %s', filename)
@@ -230,15 +245,42 @@ def get_video_duration(filename):
         return None
     logging.info('Step 13: returning duration variable')
     return duration
-
+		
 def format_duration(seconds):
     parts = []
     units = [("d", 60*60*24), ("h", 60*60), ("m", 60), ("s", 1)]
     for unit, div in units:
         amount, seconds = divmod(seconds, div)
         if amount > 0:
-            parts.append(f"{amount}{unit}")
+            # Check if amount is an integer
+            if amount.is_integer():
+                # If it's an integer, format it without a decimal point
+                parts.append(f"{int(amount)}{unit}")
+            else:
+                # If it's a decimal, format it with a decimal point
+                parts.append(f"{amount:.1f}{unit}")
     return "".join(parts)
+
+def get_file_size(file_path):
+    return os.path.getsize(file_path)
+
+@app.template_filter('url_encode')
+def url_encode(s):
+    return quote(s)
+
+@app.template_filter('url_decode')
+def url_decode(s):
+    return unquote(s)
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    size_bytes = int(size_bytes)  # Convert size_bytes to an integer
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
 
 def download(url, args, cutout, output_base):
     # Step 01 - Check global_pool
@@ -262,7 +304,7 @@ def download(url, args, cutout, output_base):
     # Step 19 - Return info, err
 
     #############################################################
-    # Step 01 ####################################################
+    # Step 01 ###################################################
     #############################################################
     logging.info('Step 01: Checking if URL is in global mongodb pool...')
     # Check if the URL already exists in the global pool
@@ -272,7 +314,7 @@ def download(url, args, cutout, output_base):
         return None, f"Download failed for URL {url}. Error: Video already exists in global pool"
 
     #############################################################
-    # Step 02 ####################################################
+    # Step 02 ###################################################
     #############################################################
     logging.info('Step 02: Grab yt-dlp and ffprobe paths, validate URLs')
     # Get the directory of the current script
@@ -284,7 +326,7 @@ def download(url, args, cutout, output_base):
         return 'Invalid URL', 400
 
     #############################################################
-    # Step 03 ####################################################
+    # Step 03 ###################################################
     #############################################################
     logging.info('Step 03: Grab video title')
     # Run yt-dlp to get video title
@@ -303,32 +345,37 @@ def download(url, args, cutout, output_base):
         return None, f"Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
 
     #############################################################
-    # Step 04 ####################################################
+    # Step 04 ###################################################
     #############################################################
     logging.info('Step 04: Sanitize title and output as variable')
     # Use the video title as the output name if no output name was provided
+    if isinstance(info, dict) and 'title' in info:
+        display_title = info['title']
+    else:
+        display_title = "Title not found"
     if not output_base:
         output = sanitize_filename(info['title'])
         fulltitle = output
-        logging.info('Step 04: Set output variable in Step 4')
+        logging.info('Step 04: Set output variable')
+        # logging.info('Step 04: info_display_title %s:', display_title)
     else:
         output = output_base
         fulltitle = output
-        logging.warning('Step 04: Setting output to output_base in Step 4')
+        logging.warning('Step 04: Setting output to output_base')
     #############################################################
-    # Step 05 ####################################################
+    # Step 05 ###################################################
     #############################################################
     logging.info('Step 05: Determining directory (public,private)')
     # Determine the directory to save the video based on whether the user is logged in
     if flask_login.current_user.is_authenticated:
         directory = f'data/private/{flask_login.current_user.username}'
-        logging.info('Step 05: Set directory variable in Step 5, username:', flask_login.current_user.username)
+        logging.info('Step 05: Set directory variable, username:', flask_login.current_user.username)
     else:
         directory = 'data/public'
         logging.info('Step 05: Set directory variable to data/public')
 
     #############################################################
-    # Step 06 ####################################################
+    # Step 06 ###################################################
     #############################################################
     logging.info('Step 06: Ensuring filename does not exceed directory path maximum limit')
     # Ensure filename does not exceed maximum length
@@ -340,7 +387,7 @@ def download(url, args, cutout, output_base):
         output = output[:max_base_filename_length - 50] + '...'
 
     #############################################################
-    # Step 07 ####################################################
+    # Step 07 ###################################################
     #############################################################
     logging.info('Step 07: Download video with yt-dlp')
     # Run yt-dlp to download the video (1/3 files)
@@ -368,7 +415,7 @@ def download(url, args, cutout, output_base):
     print(f"S07E: {result.stderr}")
 
     #############################################################
-    # Step 08 ####################################################
+    # Step 08 ###################################################
     #############################################################
     logging.info('Step 08: 1/3 Increasing download number in update_statistics')
     # Increase download number 
@@ -415,13 +462,14 @@ def download(url, args, cutout, output_base):
     logging.info(f'Step 12: Start of video_info object')
     logging.info(f'Step 12: index: {download_number}')
     logging.info(f'Step 12: id: {data["id"]}')
-    logging.info(f'Step 12: title: {fulltitle}')
+    logging.info(f'Step 12: title: %s', display_title)
     logging.info(f'Step 12: date_posted: {data["upload_date"]}')
     logging.info(f'Step 12: archive_date: {datetime.now()}')
     logging.info(f'Step 12: user: {data["uploader"]}')
     logging.info(f'Step 12: video_url: {data["webpage_url"]}')
     logging.info(f'Step 12: length: unknown') # {data["duration"]}') # old variant before function
     logging.info(f'Step 12: filename: {data["_filename"]}')
+    logging.info(f'Step 12: file size: %s', get_file_size(data["_filename"]))
     logging.info(f'Step 12: resolution: unknown')
     logging.info(f'Step 12: aspect_ratio: unknown')
     logging.info(f'Step 12: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.jpg')
@@ -441,7 +489,7 @@ def download(url, args, cutout, output_base):
     video_info = {
         'index': download_number,
         'id': data.get('id', "unknown"),
-        'title': f'{fulltitle}', # old, data.get('title', "unknown"),
+        'title': display_title, # f'{fulltitle}', # old, data.get('title', "unknown"),
         'date_posted': data.get('upload_date', "unknown"),
         'archive_date': datetime.now(), # BSON datetime object, date-based queries
         'user': data.get("uploader", "unknown"),
@@ -449,7 +497,10 @@ def download(url, args, cutout, output_base):
         'length': format_duration(get_video_duration(fnprobe)),
         'filename': f'{bdir}{filename}',
         'thumbnail': f'{bdir}{directory}/thumbnails/{sanitize_filename(output)}.jpg',
+        'tmbfp': f'{directory}/thumbnails/{sanitize_filename(output)}.jpg',
         'json_file': f'{bdir}{directory}/json/{sanitize_filename(output)}.json',
+        'file_size_bytes': get_file_size(filename),
+        'file_size_readable': "unknown",
         'resolution': "unknown",
         'aspect_ratio': "unknown"
     }
@@ -463,9 +514,12 @@ def download(url, args, cutout, output_base):
     logging.info('vInfo: video_url: %s', video_info['video_url'])
     logging.info('vInfo: length: %s', video_info['length'])
     logging.info('vInfo: filename: %s', video_info['filename'])
+    logging.info('vInfo: file_size_bytes:  %s', video_info['file_size_bytes'])
+    logging.info('vInfo: file_size_readable: unknown')
     logging.info('vInfo: resolution0: unknown')
     logging.info('vInfo: aspect_ratio0: unknown')
     logging.info('vInfo: thumbnail: "%s"', video_info['thumbnail'])
+    logging.info('vInfo: tmbfp: "%s"', video_info['tmbfp'].replace('data/', '', 1))
 
     #############################################################
     # Step 14 ###################################################
@@ -508,6 +562,11 @@ def download(url, args, cutout, output_base):
                 logging.info('Step 14: No aspect ratio found because actual_resolution is not valid')
     print(f"Aspect ratio: {video_info['aspect_ratio']}")
     logging.info('vInfo: aspect ratio1: "%s"', video_info['aspect_ratio'])
+
+    # Update file size into readable format
+    file_size_readable = convert_size(video_info['file_size_bytes'])
+    video_info['file_size_readable'] = file_size_readable
+    logging.info('Step 14: Adding file_size_readable to video_info[]')
 
     #############################################################
     # Step 15 ###################################################
@@ -554,9 +613,9 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 19 ###################################################
     #############################################################
-    logging.info('Step 19: return')
+    logging.info('Step 19: "Return"')
     return info, err
-
+		
 @app.route('/download', methods=['POST'])
 def download_videos():
     # Determine the directory to save the videos to based on the username
@@ -588,16 +647,16 @@ def download_videos():
         return 'Download started. The following errors occurred:\n' + '\n'.join(str(errors))
     else:
         return 'Download started', 200
-
-def delete_old_files():
-    while True:
-        now = time.time()
-        for folder in ['/app/data/public/videos', '/app/data/public/json', '/app/data/public/thumbnails']:
-            for filename in os.listdir(folder):
-                file_path = os.path.join(folder, filename)
-                if os.path.isfile(file_path) and os.path.getmtime(file_path) < now - 7 * 86400:
-                    os.remove(file_path)
-        time.sleep(3600)
+				
+#def delete_old_files():
+#    while True:
+#        now = time.time()
+#        for folder in ['/app/data/public/videos', '/app/data/public/json', '/app/data/public/thumbnails']:
+#            for filename in os.listdir(folder):
+#                file_path = os.path.join(folder, filename)
+#                if os.path.isfile(file_path) and os.path.getmtime(file_path) < now - 7 * 86400:
+#                    os.remove(file_path)
+#        time.sleep(3600)
 
 def delete_video(user, video_id):
     # Remove the video from the user's list of videos
@@ -609,14 +668,27 @@ def delete_video(user, video_id):
         os.remove(video['download_path'].replace('.%(ext)s', '.json'))
         os.remove(video['download_path'].replace('.%(ext)s', '.jpg'))
         global_pool.delete_one({'video_id': video_id})
-        logging.info(f'Delete_video() function, deleting %s:', video["download_path"])
+        logging.info(f'Delete_video() function, deleting %s:', video['download_path'])
 
 # Start the file deletion thread
-threading.Thread(target=delete_old_files).start()
+#threading.Thread(target=delete_old_files).start()
+
+@app.route('/data/<path:filename>')
+def serve_data(filename):
+    filename = filename.replace('data/', '', 1)
+    return send_from_directory('data', filename)
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Query MongoDB to get the video data
+    videos = list(collection.find())
+    # Modify the tmbfp attribute by removing "data/" prefix and replace special characters
+    for video in videos:
+        video['tmbfp'] = video['tmbfp'].replace("data/", "", 1)
+        video['tmbfp'] = video['tmbfp'].replace('(', '%28').replace(')', '%29').replace('\\', '%5C')
+        video['tmbfp'] = unquote(video['tmbfp'])
+    # Pass the video data to the template
+    return render_template('index.html', videos=videos)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
