@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
 		<title>YT-DLP Downloader</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
@@ -39,19 +40,40 @@
 			</div>
 			<div class="row font-monospace" style="padding-top: 15px;padding-bottom: 15px;">
 				<div class="col">
-					<div style="text-align: center;"><button class="btn" type="submit" style="width: 50%;background: #252525;color: rgb(255,255,255);font-size: 25px;font-weight: bold;border-radius: 100px;border: 2px solid #0e0e0e;text-shadow: 0px 0px 15px rgb(0,0,0);">Download</button>
+					<div style="text-align: center;">
+						<button class="btn" type="submit" style="width: 50%;background: #252525;color: rgb(255,255,255);font-size: 25px;font-weight: bold;border-radius: 100px;border: 2px solid #0e0e0e;text-shadow: 0px 0px 15px rgb(0,0,0);">
+							Download
+						</button>
 						<div class="font-monospace text-center" id="status" style="color: rgb(255,255,255);font-size: 20px;"></div>
 					</div>
 				</div>
 			</div>
 		</form>
+		
+		<div id="progress-bar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+		<script>
+				var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+				socket.on('download_progress', function(msg) {
+						document.getElementById('progress-bar').style.width = msg.progress + '%';
+				});
+		</script>
+
+		
 		<hr style="color: #bababa;border-bottom: 2px solid #bababa;">
 		<div class="row" style="text-align: center;padding-bottom: 20px;">
 			<div class="col">
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
 					<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Duration</button>
-						<div class="dropdown-menu dropdown-menu-dark"><a class="dropdown-item" href="#">Name</a><a class="dropdown-item" href="#"></a><a class="dropdown-item" href="#">File Size</a><a class="dropdown-item" href="#">Duration</a><a class="dropdown-item" href="#">Download Date</a><a class="dropdown-item" href="#">Upload Date</a></div>
+						<div class="dropdown-menu dropdown-menu-dark">
+							<a class="dropdown-item" href="#">Name</a>
+							<a class="dropdown-item" href="#">File Size</a>
+							<a class="dropdown-item" href="#">Duration</a>
+							<a class="dropdown-item" href="#">Download Date</a>
+							<a class="dropdown-item" href="#">Upload Date</a>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -64,7 +86,15 @@
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
 					<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Dropdown </button>
-						<div class="dropdown-menu dropdown-menu-dark"><a class="dropdown-item" href="#">10</a><a class="dropdown-item" href="#">25</a><a class="dropdown-item" href="#">50</a><a class="dropdown-item" href="#">100</a><a class="dropdown-item" href="#">150</a><a class="dropdown-item" href="#">250</a><a class="dropdown-item" href="#">Infinite Scrolling</a></div>
+						<div class="dropdown-menu dropdown-menu-dark">
+							<a class="dropdown-item" href="#">10</a>
+							<a class="dropdown-item" href="#">25</a>
+							<a class="dropdown-item" href="#">50</a>
+							<a class="dropdown-item" href="#">100</a>
+							<a class="dropdown-item" href="#">150</a>
+							<a class="dropdown-item" href="#">250</a>
+							<a class="dropdown-item" href="#">Infinite Scrolling</a>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -160,6 +190,6 @@
 			</body>
 		</html>
 	</script>
-	<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 </body>
 </html>
