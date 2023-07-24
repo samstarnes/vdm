@@ -6,6 +6,7 @@ import math
 import time
 import json
 import shutil
+import hashlib
 import logging
 import zipfile
 import threading
@@ -13,6 +14,7 @@ import subprocess
 import validators
 import flask_login
 import urllib.request
+from PIL import Image
 from threading import Lock
 from datetime import datetime
 from pymongo import MongoClient
@@ -21,8 +23,7 @@ from urllib.parse import quote, unquote
 from bson.objectid import ObjectId
 from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
-# may use at some point
-# import glob
+import glob
 # import concurrent.futures
 # from threading import Timer
 app = Flask(__name__, static_folder='static')
@@ -41,24 +42,24 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # Things left to add
 
 # High Priority
-# - Stylize home page ✅
 # - create video player page (pull data with _id as URL)
-# - customizable grid format for number of items
-# - customizable number of items displayed, normal vs reverse order
-# - customizable items ordered by duration, size, download date (ID), posted date 
+# - customizable items ordered by duration, size, download date (ID), posted date
 # - configurable public item automatic deletion, cookie file, themes
 
 # Low Priority
-# - multi-user login 
-# - search function 
+# - multi-user login
+# - search function
 # - filter function
-# - sanitize URLs for useless cookies for global mongoDB pool ✅
+# - customizable number of items displayed, normal vs reverse order
 
 # Completed
+# - grab thumbnails for various downloads such as reddit ✅ 
+# - append IDs to filenames so no overwriting is possible ✅
 # - design new file structure ✅
 # - connect mongodb ✅
 # - grab thumbnails ✅
-
+# - sanitize URLs for useless cookies for global mongoDB pool ✅
+# - Stylize home page ✅
 
 
 bdir = '/srv/docker/anomaly-ytdlp/'
@@ -199,43 +200,37 @@ def update_statistics(url):
     logging.info('Step 7: Dumping stats from update_statistics')
     return stats['total_downloads'], stats['domains'][domain]
 
-def sanitize_filename(filename):
+def sanitize_filename(filename, max_length=200):
     invalid_chars = '!*()[].\'%&@$/<>:"/\\|?*#;^%~`,'
     for char in invalid_chars:
         filename = filename.replace(char, '_')
+    # Truncate and hash the filename if it's too long
+    if len(filename) > max_length:
+        filename_hash = hashlib.md5(filename.encode()).hexdigest()
+        filename = filename[:max_length - len(filename_hash)] # + filename_hash
     logging.info('Returning filename from sanitize_filename: %s', filename)
     return filename
 
 def get_video_resolution(filename):
     logging.info('Step 14: Processing filename: %s', filename)
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
-    logging.info('Step 14: ffprobe found at: %s', ffprobepath)
-    logging.info('Step 14: ffprobe in get_video_resolution')
     command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', filename]
-    logging.info('Step 14: Setting command variable in get_video_resolution')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logging.info('Step 14: Running subprocess.Popen in get_video_resolution')
     output, err = process.communicate()
     if err:
         logging.error('ffprobe error: %s', err.decode('utf-8'))
-    logging.info('Step 14: output via get_video_resolution')
     return output.decode('utf-8').strip()
 
 def get_video_duration(filename):
     logging.info(f'Step 13: Processing filename: %s', filename)
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
-    logging.info(f'Step 13: ffprobe found at: %s', ffprobepath)
-    logging.info(f'Step 13: ffprobe in get_video_duration')
     command = [ffprobepath, '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', filename]
     logging.info('Step 13: Running subprocess.Popen for get_video_duration')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = process.communicate()
     if err:
         logging.error('Step 13: ffprobe error: %s', err)
-    logging.info('Step 13: output via get_video_duration')
     output_json = json.loads(output) 
-    logging.info('Step 13: set output_json variable')
-    logging.info('Step 13: duration_str set from format duration from output json')
     duration_str = output_json['format']['duration']
     try:
         duration = float(duration_str)
@@ -243,9 +238,52 @@ def get_video_duration(filename):
     except ValueError:
         logging.error(f"Step 13: Invalid duration: {duration_str}")
         return None
-    logging.info('Step 13: returning duration variable')
     return duration
-		
+
+def get_video_extension(directory, output):
+    # List all files that start with the output name
+    files = glob.glob(f"{directory}/videos/{sanitize_filename(output)}.*")
+    # If there are any files that match
+    if files:
+        # Get the first file
+        file = files[0]
+        # Get the extension
+        vextension = os.path.splitext(file)[1]
+        # Return the extension without the dot
+        return vextension.lstrip('.')
+    else:
+        return None
+
+def get_thumbnail_extension(directory, output):
+    # List all files that start with the output name
+    files = glob.glob(f"{directory}/thumbnails/{sanitize_filename(output)}.*")
+    # If there are any files that match
+    if files:
+        # Get the first file
+        file = files[0]
+        # Get the extension
+        extension = os.path.splitext(file)[1]
+        # Return the extension without the dot
+        return extension.lstrip('.')
+    else:
+        return None
+
+def is_image_corrupted(image_path):
+    try:
+        img = Image.open(image_path)
+        img.verify()  # verify that it is, in fact an image
+        return False
+    except (IOError, SyntaxError) as e:
+        return True
+
+def extract_thumbnail(video_path, thumbnail_path):
+    command = ['ffmpeg', '-y', '-i', video_path, '-ss', '00:00:01', '-vframes', '1', thumbnail_path]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        print(f"extract_thumbnail: stderr:\n{stderr.decode()}")
+        raise subprocess.CalledProcessError(process.returncode, command)
+
 def format_duration(seconds):
     parts = []
     units = [("d", 60*60*24), ("h", 60*60), ("m", 60), ("s", 1)]
@@ -351,17 +389,24 @@ def download(url, args, cutout, output_base):
     # Use the video title as the output name if no output name was provided
     if isinstance(info, dict) and 'title' in info:
         display_title = info['title']
+        logging.info('Step 04: P1')
     else:
         display_title = "Title not found"
+        logging.info('Step 04: P2')
     if not output_base:
         output = sanitize_filename(info['title'])
         fulltitle = output
+        output = sanitize_filename(info['title']) + "_" + info['id']
         logging.info('Step 04: Set output variable')
+        logging.info('Step 04: P3')
         # logging.info('Step 04: info_display_title %s:', display_title)
     else:
-        output = output_base
+        output = sanitize_filename(output_base) # custom output names from form
         fulltitle = output
+        output = sanitize_filename(output_base) + "_" + info['id'] # custom output names from form
         logging.warning('Step 04: Setting output to output_base')
+        logging.info('Step 04: P4')
+
     #############################################################
     # Step 05 ###################################################
     #############################################################
@@ -377,14 +422,14 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 06 ###################################################
     #############################################################
-    logging.info('Step 06: Ensuring filename does not exceed directory path maximum limit')
+    #logging.info('Step 06: Ensuring filename does not exceed directory path maximum limit')
     # Ensure filename does not exceed maximum length
-    max_filename_length = 255
+    #max_filename_length = 255
     # Account for the length of the longest extension (.json)
-    max_base_filename_length = max_filename_length - len('/thumbnails/') - len('.json')
-    if len(output) > max_base_filename_length:
+    #max_base_filename_length = max_filename_length - len('/thumbnails/') - len('.json')
+    #if len(output) > max_base_filename_length:
         # Truncate filename and add an ellipsis to indicate truncation
-        output = output[:max_base_filename_length - 50] + '...'
+    #    output = output[:max_base_filename_length - 70] + '...'
 
     #############################################################
     # Step 07 ###################################################
@@ -410,8 +455,6 @@ def download(url, args, cutout, output_base):
             if download_process.returncode != 0:
                 logging.info(f"From subprocess.Popen: {err}")
             return f"Download failed with error: {e}", 500
-            #download_process = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
-            #result, err = download_process.communicate()
     print(f"S07E: {result.stderr}")
 
     #############################################################
@@ -439,11 +482,18 @@ def download(url, args, cutout, output_base):
     #############################################################
     logging.info('Step 10: 3/3 Download thumbnail to file')
     # Run yt-dlp to download the thumbnail (3/3 files)
-    tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '--convert-thumbnails', 'jpg', '-o', f'{directory}/thumbnails/{output}', '--cookies', 'cookies.txt', url]
+    tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '-o', f'{directory}/thumbnails/{output}', '--cookies', 'cookies.txt', url]
     with lock:
         download_process = subprocess.Popen(tmbs, stdout=subprocess.PIPE, text=True)
         result, err = download_process.communicate()
         logging.info('Step 10: Downloading thumbnail')
+    extension = get_thumbnail_extension(directory, output)
+    thumbnail_path = f'{directory}/thumbnails/{output}.{extension}'
+    if is_image_corrupted(thumbnail_path):
+        logging.info('Step 10: Thumbnail is corrupted, extracting a new one from the video')
+        vextension = get_video_extension(directory, output)
+        video_path = f'{directory}/videos/{output}.{vextension}'
+        extract_thumbnail(video_path, thumbnail_path)
 
     #############################################################
     # Step 11 ###################################################
@@ -459,6 +509,7 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 12 ###################################################
     #############################################################
+		
     logging.info(f'Step 12: Start of video_info object')
     logging.info(f'Step 12: index: {download_number}')
     logging.info(f'Step 12: id: {data["id"]}')
@@ -467,12 +518,12 @@ def download(url, args, cutout, output_base):
     logging.info(f'Step 12: archive_date: {datetime.now()}')
     logging.info(f'Step 12: user: {data["uploader"]}')
     logging.info(f'Step 12: video_url: {data["webpage_url"]}')
-    logging.info(f'Step 12: length: unknown') # {data["duration"]}') # old variant before function
+    logging.info(f'Step 12: length: unknown')
     logging.info(f'Step 12: filename: {data["_filename"]}')
     logging.info(f'Step 12: file size: %s', get_file_size(data["_filename"]))
     logging.info(f'Step 12: resolution: unknown')
     logging.info(f'Step 12: aspect_ratio: unknown')
-    logging.info(f'Step 12: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.jpg')
+    logging.info(f'Step 12: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.{extension}')
 
     #############################################################
     # Step 13 ###################################################
@@ -489,15 +540,15 @@ def download(url, args, cutout, output_base):
     video_info = {
         'index': download_number,
         'id': data.get('id', "unknown"),
-        'title': display_title, # f'{fulltitle}', # old, data.get('title', "unknown"),
+        'title': display_title, # previously set
         'date_posted': data.get('upload_date', "unknown"),
         'archive_date': datetime.now(), # BSON datetime object, date-based queries
         'user': data.get("uploader", "unknown"),
         'video_url': data.get('webpage_url', "unknown"),
         'length': format_duration(get_video_duration(fnprobe)),
         'filename': f'{bdir}{filename}',
-        'thumbnail': f'{bdir}{directory}/thumbnails/{sanitize_filename(output)}.jpg',
-        'tmbfp': f'{directory}/thumbnails/{sanitize_filename(output)}.jpg',
+        'thumbnail': f'{bdir}{directory}/thumbnails/{sanitize_filename(output)}.{extension}',
+        'tmbfp': f'{directory}/thumbnails/{sanitize_filename(output)}.{extension}',
         'json_file': f'{bdir}{directory}/json/{sanitize_filename(output)}.json',
         'file_size_bytes': get_file_size(filename),
         'file_size_readable': "unknown",
@@ -599,7 +650,9 @@ def download(url, args, cutout, output_base):
             logging.info('Step 17: Dumping video_info[] json to file ')
         print(f"Successfully wrote to file {extracted_info_filename}")  # Debugging print statement
         logging.info('Step 17: Wrote to extracted_info_filename new data')
-    
+        os.remove(json_output_filename) # disable this for debug for original json data
+        logging.info('Step 17: Removing old JSON data')
+
 		# with lock: # No longer need the original JSON file - removing this to conserve space
     #############################################################
     # Step 18 ###################################################
