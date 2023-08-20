@@ -5,6 +5,8 @@ import sys
 import math
 import time
 import json
+import magic
+import redis
 import shutil
 import hashlib
 import logging
@@ -15,22 +17,27 @@ import validators
 import flask_login
 import urllib.request
 from PIL import Image
+from flask_sse import sse
 from threading import Lock
 from datetime import datetime
+from json import JSONDecodeError
 from pymongo import MongoClient
 from urllib.parse import urlparse
 from urllib.parse import quote, unquote
 from bson.objectid import ObjectId
-from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory
+from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, Response, json, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 import glob
 # import concurrent.futures
 # from threading import Timer
 app = Flask(__name__, static_folder='static')
+r = redis.Redis(host='ytdlredis', port=6379, db=0)  # adjust these parameters to your Redis configuration
+app.config["REDIS_URL"] = "redis://redis:6379"
+app.register_blueprint(sse, url_prefix='/stream')
 # Set system default path to /app
 os.environ['PATH'] += os.pathsep + '/app'
 # Set up logging
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='app.log', filemode='w', datefmt='%Y-%m-%d %H:%M:%S', format='%(asctime)s - %(levelname)-8s %(message)s', level=logging.INFO)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 
     # logging.debug() 
@@ -38,7 +45,7 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
     # logging.warning()
     # logging.error()
     # logging.critical()
-    
+
 # Things left to add
 
 # High Priority
@@ -47,10 +54,11 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # - configurable public item automatic deletion, cookie file, themes
 
 # Low Priority
+# - calender filter for searching between dates
 # - multi-user login
 # - search function
 # - filter function
-# - customizable number of items displayed, normal vs reverse order
+# - normal vs reverse order 
 
 # Completed
 # - grab thumbnails for various downloads such as reddit ✅ 
@@ -60,7 +68,8 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # - grab thumbnails ✅
 # - sanitize URLs for useless cookies for global mongoDB pool ✅
 # - Stylize home page ✅
-
+# - Progress bar ✅
+# - customizable number of items displayed (kinda) ✅
 
 bdir = '/srv/docker/anomaly-ytdlp/'
 app.secret_key = 'zu7t101tyNVBExIw2FzHx3R4elulSG3qPC1WqpkzSV2CNQG93Rh1FFcat4SMgphw'
@@ -103,6 +112,8 @@ os.chmod('/app/ffprobe', 0o755)
 logging.info('Setting permissions to 0755')
 # Set cookies file path variable, default is main directory /app 
 defcookiesfp = 'cookies.txt'
+# video extensions global
+VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'flv', 'mov', 'avi', 'wmv']
 # Set up Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -167,6 +178,9 @@ def register():
     else:
         return render_template('register.html')
 
+    #############################################################
+    #################### Fetch User from DB #####################
+
 def fetch_user_from_database(username):
     # Connect to your MongoDB client
     client = MongoClient('mongodb://ytdldb:27017/')
@@ -179,6 +193,9 @@ def fetch_user_from_database(username):
     # Return the user record
     return user_record
 
+    #############################################################
+    ##################### Update Statistics #####################
+
 def update_statistics(url):
     stats_file = 'statistics.json'
     if os.path.exists(stats_file):
@@ -190,20 +207,24 @@ def update_statistics(url):
     else:
         stats = {'total_downloads': 0, 'domains': {}}
     stats['total_downloads'] += 1
-    logging.info('Step 7: Incrementing total_downloads by 1')
+    logging.info('Step 07: Incrementing total_downloads by 1')
     domain = urlparse(url).netloc
     if domain not in stats['domains']:
         stats['domains'][domain] = 0
     stats['domains'][domain] += 1
     with open(stats_file, 'w') as f:
         json.dump(stats, f)
-    logging.info('Step 7: Dumping stats from update_statistics')
+    logging.info('Step 07: Dumping stats from update_statistics')
     return stats['total_downloads'], stats['domains'][domain]
 
+    #############################################################
+    ##################### Sanitize Filename #####################
+
 def sanitize_filename(filename, max_length=200):
-    invalid_chars = '!*()[].\'%&@$/<>:"/\\|?*#;^%~`,'
+    invalid_chars = '\“\”!*()[].\'%&@$/<>:"/\\|?*#;^%~`,'
     for char in invalid_chars:
-        filename = filename.replace(char, '_')
+        filename = filename.replace(char, '_') # remove illegal characters
+        filename = re.sub(' +', ' ', filename) # remove consecutive spaces
     # Truncate and hash the filename if it's too long
     if len(filename) > max_length:
         filename_hash = hashlib.md5(filename.encode()).hexdigest()
@@ -211,20 +232,39 @@ def sanitize_filename(filename, max_length=200):
     logging.info('Returning filename from sanitize_filename: %s', filename)
     return filename
 
+    #############################################################
+    ###################### Video Resolution #####################
+    
 def get_video_resolution(filename):
     logging.info('Step 14: Processing filename: %s', filename)
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
-    command = [ffprobepath, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', filename]
+    command = [
+        ffprobepath,
+        '-v', 'error',
+        '-select_streams', 'v:0',
+        '-show_entries',
+        'stream=width,height', '-of', 'csv=s=x:p=0',
+        filename
+    ]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = process.communicate()
     if err:
         logging.error('ffprobe error: %s', err.decode('utf-8'))
     return output.decode('utf-8').strip()
 
+    #############################################################
+    ####################### Video Duration ######################
+		
 def get_video_duration(filename):
     logging.info(f'Step 13: Processing filename: %s', filename)
     ffprobepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffprobe')
-    command = [ffprobepath, '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', filename]
+    command = [
+        ffprobepath,
+        '-v', 'error',
+        '-show_entries',
+        'format=duration', '-of', 'json',
+        filename
+    ]
     logging.info('Step 13: Running subprocess.Popen for get_video_duration')
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, err = process.communicate()
@@ -240,33 +280,49 @@ def get_video_duration(filename):
         return None
     return duration
 
+    #############################################################
+    ###################### Video Format #########################
+
+def get_video_format(filepath):
+    mime = magic.Magic(mime=True)
+    file_type = mime.from_file(filepath)
+    # Map MIME types to file extensions
+    mime_to_extension = {
+        'video/webm': 'webm',
+        'video/mp4': 'mp4',
+        'video/quicktime': 'mov',
+        'video/x-msvideo': 'avi',
+        'video/x-matroska': 'mkv',
+        # ... add other mappings as needed
+    }
+    logging.info('Step 13: get_video_format() function')
+    return mime_to_extension.get(file_type)
+
+    #############################################################
+    ###################### Video Extension ######################
+
 def get_video_extension(directory, output):
     # List all files that start with the output name
-    files = glob.glob(f"{directory}/videos/{sanitize_filename(output)}.*")
+    files = glob.glob(f"{directory}/videos/{output}.*")
     # If there are any files that match
     if files:
         # Get the first file
         file = files[0]
-        # Get the extension
-        vextension = os.path.splitext(file)[1]
-        # Return the extension without the dot
-        return vextension.lstrip('.')
+        # Determine the video format
+        vformat = get_video_format(file)
+        if vformat:
+            logging.info(f'Step 13: P1: Video format {vformat}')
+            return vformat
+        else:
+            # If unable to determine format, fall back to file extension
+            vextension = os.path.splitext(file)[1]
+            logging.info(f'Step 13: P2: Video format {vextension}')
+            return vextension.lstrip('.')
     else:
         return None
 
-def get_thumbnail_extension(directory, output):
-    # List all files that start with the output name
-    files = glob.glob(f"{directory}/thumbnails/{sanitize_filename(output)}.*")
-    # If there are any files that match
-    if files:
-        # Get the first file
-        file = files[0]
-        # Get the extension
-        extension = os.path.splitext(file)[1]
-        # Return the extension without the dot
-        return extension.lstrip('.')
-    else:
-        return None
+    #############################################################
+    ####################### Image Check #########################
 
 def is_image_corrupted(image_path):
     try:
@@ -276,13 +332,41 @@ def is_image_corrupted(image_path):
     except (IOError, SyntaxError) as e:
         return True
 
+    #############################################################
+    ################### Get IMG Format w/ PIL ###################
+
+def get_image_format_using_pil(filepath):
+    try:
+        with Image.open(filepath) as img:
+            format = img.format.lower()
+            if format == "jpeg":
+                return "jpg"
+            return format
+    except Exception as e:
+        logging.error(f"Error determining format for {filepath}: {e}")
+        return "jpg" # returning jpg instead of None to continue the process
+
+    #############################################################
+    ##################### Extract Thumbnail #####################
+
 def extract_thumbnail(video_path, thumbnail_path):
-    command = ['ffmpeg', '-y', '-i', video_path, '-ss', '00:00:01', '-vframes', '1', thumbnail_path]
+    logging.info(f'Function: extract_thumbnail():: video_path: {video_path} :: thumbnail_path: {thumbnail_path}')
+    command = [
+        'ffmpeg',
+        '-y',
+        '-i', video_path,
+        '-ss', '00:00:01',
+        '-vframes', '1',
+        thumbnail_path
+    ]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     if process.returncode != 0:
-        print(f"extract_thumbnail: stderr:\n{stderr.decode()}")
+        logging.info(f'Step 10: extract_thumbnail: stderr:\n{stderr.decode()}')
         raise subprocess.CalledProcessError(process.returncode, command)
+
+    #############################################################
+    ##################### Format Duration #######################
 
 def format_duration(seconds):
     parts = []
@@ -299,8 +383,15 @@ def format_duration(seconds):
                 parts.append(f"{amount:.1f}{unit}")
     return "".join(parts)
 
+    #############################################################
+    ###################### Get File Size ########################
+
 def get_file_size(file_path):
+    time.sleep(3)
     return os.path.getsize(file_path)
+
+    #############################################################
+    ##################### URL en/decoding #######################
 
 @app.template_filter('url_encode')
 def url_encode(s):
@@ -309,6 +400,9 @@ def url_encode(s):
 @app.template_filter('url_decode')
 def url_decode(s):
     return unquote(s)
+
+    #############################################################
+    ###################### Convert Sizes ########################
 
 def convert_size(size_bytes):
     if size_bytes == 0:
@@ -320,27 +414,67 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
 
-def download(url, args, cutout, output_base):
-    # Step 01 - Check global_pool
-    # Step 02 - Grab Directories: script, yt-dlp, ffprobe & validate URL
-    # Step 03 - Grab video title
-    # Step 04 - Set output as title name for filename
-    # Step 05 - Set directory for public/private
-    # Step 06 - Ensure max_filename_length is not exceeded
-    # Step 07 - Download video to videos folder
-    # Step 08 - Increment Download number to statistics
-    # Step 09 - Save JSON output to file
-    # Step 10 - Download the thumbnail to the thumbnails folder
-    # Step 11 - Load the JSON file
-    # Step 12 - Logging data info
-    # Step 13 - Extract video info from JSON
-    # Step 14 - Set video resolution and aspect ratio
-    # Step 15 - Add URL and location to global pool
-    # Step 16 - Add video info to database
-    # Step 17 - Write extracted info to the new finalized _info file
-    # Step 18 - Remove original JSON to conserve space
-    # Step 19 - Return info, err
+    #############################################################
+    ###################### Route /stream ########################
 
+@app.route('/stream')
+def stream():
+    def event_stream():
+        while True:
+            # Get the progress updates from Redis
+            progperc = r.get('progress')
+            progtotal = r.get('total')
+            progspeed = r.get('speed')
+            progeta = r.get('eta')
+            # Create a dictionary with the progress data
+            progress_data = {
+                "progress": progperc.decode() if progperc else None,
+                "total": progtotal.decode() if progtotal else None,
+                "speed": progspeed.decode() if progspeed else None,
+                "eta": progeta.decode() if progeta else None
+            }
+            # Convert the dictionary to a JSON string and yield it as a Server-Sent Event
+            yield f"data: {json.dumps(progress_data)}\n\n"
+            time.sleep(1)
+    return Response(event_stream(), mimetype="text/event-stream")
+
+    #############################################################
+    ###################### Route /videos ########################
+
+@app.route('/videos')
+def videos():
+    p = int(request.args.get('p', 1))
+    ipp = int(request.args.get('ipp', 20))
+    offset = (p - 1) * ipp
+    videos = collection.find().skip(offset).limit(ipp)
+    total_videos = collection.count_documents({})
+    return render_template('videos.html', videos=videos, p=p, ipp=ipp, total_videos=total_videos)
+
+    #############################################################
+    ###################### Parse Progress #######################
+
+def parse_progress(poutput):
+    # Log the output for debugging purposes
+    logging.info(f'Step 07: parse_progress(poutput) = {poutput}')
+    # Parse the JSON string
+    try:
+        progress_info = json.loads(poutput)
+        # Extract the progress percentage and remove the '%' symbol
+        progperc = progress_info.get('progress percentage')
+        if progperc is not None:
+            progperc = float(progperc.strip('%'))
+            # Extract the total progress
+            progtotal = progress_info.get('progress total')
+            # Extract the speed
+            progspeed = progress_info.get('speed')
+            # Extract the ETA
+            progeta = progress_info.get('ETA')
+            return progperc, progtotal, progspeed, progeta
+    except JSONDecodeError:
+        logging.error(f"Step 07: parse_progress() Failed to parse JSON from poutput: {poutput}")
+        return None, None, None, None
+
+def download(url, args, cutout, output_base):
     #############################################################
     # Step 01 ###################################################
     #############################################################
@@ -349,7 +483,7 @@ def download(url, args, cutout, output_base):
     existing_video = global_pool.find_one({'video_url': url})
     if existing_video is not None:
         # If the URL exists, return a warning message and halt the download
-        return None, f"Download failed for URL {url}. Error: Video already exists in global pool"
+        return None, f"Download failed for URL {url}. Error: Video URL already exists in global pool"
 
     #############################################################
     # Step 02 ###################################################
@@ -371,7 +505,14 @@ def download(url, args, cutout, output_base):
     with lock:
         ddir = os.getcwd()
         logging.info(f"ddir: {ddir}")
-        info_command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '--skip-download', '--print-json', '--cookies', 'cookies.txt', url]
+        info_command = [
+            yt_dlp_path,
+            '-f', 'bestvideo+bestaudio/best',
+            '--skip-download',
+            '--print-json',
+            '--cookies', 'cookies.txt',
+            url
+        ]
         info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
         info_result, err = info_process.communicate()
     try:
@@ -399,7 +540,6 @@ def download(url, args, cutout, output_base):
         output = sanitize_filename(info['title']) + "_" + info['id']
         logging.info('Step 04: Set output variable')
         logging.info('Step 04: P3')
-        # logging.info('Step 04: info_display_title %s:', display_title)
     else:
         output = sanitize_filename(output_base) # custom output names from form
         fulltitle = output
@@ -414,128 +554,192 @@ def download(url, args, cutout, output_base):
     # Determine the directory to save the video based on whether the user is logged in
     if flask_login.current_user.is_authenticated:
         directory = f'data/private/{flask_login.current_user.username}'
+        g.directory = f'data/private/{flask_login.current_user.username}'
         logging.info('Step 05: Set directory variable, username:', flask_login.current_user.username)
     else:
         directory = 'data/public'
+        g.directory = 'data/public'
         logging.info('Step 05: Set directory variable to data/public')
 
     #############################################################
     # Step 06 ###################################################
     #############################################################
-    #logging.info('Step 06: Ensuring filename does not exceed directory path maximum limit')
-    # Ensure filename does not exceed maximum length
-    #max_filename_length = 255
-    # Account for the length of the longest extension (.json)
-    #max_base_filename_length = max_filename_length - len('/thumbnails/') - len('.json')
-    #if len(output) > max_base_filename_length:
-        # Truncate filename and add an ellipsis to indicate truncation
-    #    output = output[:max_base_filename_length - 70] + '...'
+    logging.info('Step 07: Download video with yt-dlp')
+    # Run yt-dlp to download the video (1/3 files)
+    # Set Command 1 for Progress/DL of video
+    progresscmd = [
+        yt_dlp_path,
+        '-f', 'bestvideo+bestaudio/best',
+        '-o', f'{directory}/videos/{output}.%(ext)s',
+        '--cookies', 'cookies.txt',
+        '--newline',
+        '--progress-template', '{ "progress percentage":"%(progress._percent_str)s","progress total":"%(progress._total_bytes_str)s","speed":"%(progress._speed_str)s","ETA":"%(progress._eta_str)s" }',
+        '--force-overwrites',
+        url
+    ]
+    logging.info('Step 07: Set progresscmd')
+    if args and args[0] != '':
+        progresscmd.extend(args)
+    progresscutout = request.form['cutout'].split('-')
+    if len(progresscutout) == 2:  # Only add progresscutout args if two values are provided
+        progresscutout_args = f'"-ss {progresscutout[0]} -to {progresscutout[1]}"'
+        progresscmd.extend(['--postprocessor-args', progresscutout_args])
+    # Set Command 2 for DL of JSON object
+    jsoncmd = [
+        yt_dlp_path,
+        '-f', 'bestvideo+bestaudio/best',
+        '-o', f'{directory}/videos/{output}.%(ext)s',
+        '--print-json',
+        '--cookies', 'cookies.txt',
+        '--skip-download',
+        '--force-overwrites',
+        url
+    ]
+    logging.info('Step 07: Set jsoncmd')
+    if args and args[0] != '':
+        jsoncmd.extend(args)
+    jsoncutout = request.form['cutout'].split('-')
+    if len(jsoncutout) == 2:  # Only add jsoncutout args if two values are provided
+        jsoncutout_args = f'"-ss {jsoncutout[0]} -to {jsoncutout[1]}"'
+        jsoncmd.extend(['--postprocessor-args', jsoncutout_args])
+    with lock:
+        try:
+            #############################################################
+            ##################### DL/Progress/Video #####################
+            #############################################################
+            progressres = subprocess.Popen(progresscmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            actual_extension = None  # Initialize the variable outside the loop
+            with open(f'{directory}/json/{output}_progress.json', 'w') as progress_file:  # Open the JSON file and the progress file # Open the JSON file
+                while True:
+                    poutput = progressres.stdout.readline()
+                    # progressres.stdout.flush()
+                    if poutput == '' and progressres.poll() is not None:
+                        break
+                    if poutput:
+                        downloaded_file_line = [line for line in poutput.split('\n') if '[download] Destination:' in line]
+                        if downloaded_file_line:
+                            downloaded_file = downloaded_file_line[0].split()[-1]
+                            potential_extension = os.path.splitext(downloaded_file)[1].lstrip('.')
+                            if potential_extension in VIDEO_EXTENSIONS:
+                                actual_extension = potential_extension
+                                video_path = f'{directory}/videos/{output}.{actual_extension}'
+                        progperc, progtotal, progspeed, progeta = parse_progress(poutput.strip())
+                        if progperc is not None:
+                            logging.info(f'Step 07: SSE-Event: {progperc} {progtotal} {progspeed} {progeta}')
+                            # using redis to publish progress reports to client
+                            sse.publish({
+                                "progress": progperc,
+                                "total": progtotal,
+                                "speed": progspeed,
+                                "eta": progeta
+                            }, type='download_progress')
+                            # Save JSON output to a file (2/3 files)
+                            # progress_file.write(poutput)  # Write the output to the JSON file
+                    rc = progressres.poll()
+            logging.info(f'Step 07: Writing output to JSON - 2/3 files (json)')
+            #############################################################
+            ######################### DL/JSON ###########################
+            #############################################################
+            jsonres = subprocess.Popen(jsoncmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            with open(f'{directory}/json/{output}.json', 'w') as json_file: # Open the JSON file
+                while True:
+                    poutput = jsonres.stdout.readline()
+                    # progressres.stdout.flush()
+                    if poutput == '' and jsonres.poll() is not None:
+                        break
+                    if poutput:
+                        # Save JSON output to a file (2/3 files)
+                        logging.info(f'Step 07: Writing output to JSON - 2/3 files (json)')
+                        # logging.info(f'Step 07: poutput = {poutput}')
+                        json_file.write(poutput)  # Write the output to the JSON file
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Step 07: Download failed with error: {e}")
+            download_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            jsonres, err = download_process.communicate()
+            if download_process.returncode != 0:
+                logging.info(f"Step 07: From subprocess.Popen: {err}")
+            return f"Step 07: Download failed with error: {e}", 500
+    print(f"S07E: {jsonres.stderr}")
+    json_output_filename = f'{directory}/json/{output}.json'
 
     #############################################################
     # Step 07 ###################################################
     #############################################################
-    logging.info('Step 07: Download video with yt-dlp')
-    # Run yt-dlp to download the video (1/3 files)
-    command = [yt_dlp_path, '-f', 'bestvideo+bestaudio/best', '-o', f'{directory}/videos/{output}.%(ext)s', '--print-json', '--cookies', 'cookies.txt', url]
-    if args and args[0] != '':
-        command.extend(args)
-    cutout = request.form['cutout'].split('-')
-    if len(cutout) == 2:  # Only add cutout args if two values are provided
-        cutout_args = f'"-ss {cutout[0]} -to {cutout[1]}"'
-        command.extend(['--postprocessor-args', cutout_args])
-    with lock:
-        try:
-            logging.info('Step 07: Try')
-            result = subprocess.run(command, stdout=subprocess.PIPE, text=True, check=True)
-            logging.info('Step 07: Result')
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Download failed with error: {e}")
-            download_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            result, err = download_process.communicate()
-            if download_process.returncode != 0:
-                logging.info(f"From subprocess.Popen: {err}")
-            return f"Download failed with error: {e}", 500
-    print(f"S07E: {result.stderr}")
+    logging.info('Step 08: 1/3 Increasing download number in update_statistics')
+    # Increase download number 
+    download_number = update_statistics(url)[0]
 
     #############################################################
     # Step 08 ###################################################
     #############################################################
-    logging.info('Step 08: 1/3 Increasing download number in update_statistics')
-    # Increase download number 
-    download_number = update_statistics(url)[0]
-    voutput = f'{directory}/videos/{output}.%(ext)s'
-
-    #############################################################
-    # Step 09 ###################################################
-    #############################################################
-    logging.info('Step 09: 2/3 Save JSON to file')
-    # Save JSON output to a file (2/3 files)
-    json_output_filename = f'{directory}/json/{sanitize_filename(output)}.json'
-    print({json_output_filename})
-    logging.info('Step 09: Attempt to open file and write json_file info')
-    with open(json_output_filename, 'w') as json_file:
-        json_file.write(result.stdout) # info_result
-        logging.info('Step 09: Written json_file info')
-
-    #############################################################
-    # Step 10 ###################################################
-    #############################################################
     logging.info('Step 10: 3/3 Download thumbnail to file')
     # Run yt-dlp to download the thumbnail (3/3 files)
-    tmbs = [yt_dlp_path, '--skip-download', '--write-thumbnail', '-o', f'{directory}/thumbnails/{output}', '--cookies', 'cookies.txt', url]
+    tmbs = [
+        yt_dlp_path,
+        '--skip-download',
+        '--write-thumbnail',
+        '-o', f'{directory}/thumbnails/{output}',
+        '--cookies', 'cookies.txt',
+        url
+    ]
     with lock:
         download_process = subprocess.Popen(tmbs, stdout=subprocess.PIPE, text=True)
         result, err = download_process.communicate()
         logging.info('Step 10: Downloading thumbnail')
-    extension = get_thumbnail_extension(directory, output)
-    thumbnail_path = f'{directory}/thumbnails/{output}.{extension}'
+    time.sleep(3)
+    logging.info(f'Step 10: output for tmb13 P1: {output}')
+    # List all files that start with the output name
+    files = glob.glob(f'{directory}/thumbnails/{output}*')
+    # If there are any files that match
+    if files:
+        # Get the first file
+        file = files[0]
+        logging.info(f'Step 10: list of files: {file}')
+        extension = get_image_format_using_pil(file)
+        logging.info(f'Step 10: extension: {extension}')
+    else:
+        extension = None
+        logging.info(f'Step 10: error: output for tmb13 P2: {output}')
+    thumbnail_path = f'{file}'
     if is_image_corrupted(thumbnail_path):
         logging.info('Step 10: Thumbnail is corrupted, extracting a new one from the video')
-        vextension = get_video_extension(directory, output)
-        video_path = f'{directory}/videos/{output}.{vextension}'
+        time.sleep(5)
+        # vextension = get_video_extension(directory, output)
+        logging.info(f'Step 10: video_path: {video_path}')
+        logging.info(f'Step 10: output: {output}')
+        logging.info(f'Step 10: extension: {extension}')
         extract_thumbnail(video_path, thumbnail_path)
+
+    #############################################################
+    # Step 09 ###################################################
+    #############################################################
+        # Load the JSON data
+    try:
+        with open(json_output_filename, 'r') as f:
+            logging.info('Step 11: Setting data variable')
+            data = json.load(f)
+    except json.JSONDecodeError:
+        logging.error(f"Step 11: Failed to load JSON data from {json_output_filename}. File content might be empty or not properly formatted.")
+        data = None
+
+    #############################################################
+    # Step 10 ###################################################
+    #############################################################
+
+    try:
+        tfilesize = get_file_size(data["_filename"])
+        logging.info('Step 11: trying to grab filesize from file')
+    except:
+        tfilesize = 0
 
     #############################################################
     # Step 11 ###################################################
     #############################################################
-    logging.info('Step 11: Prepare data for video_info[] object')
-    # Load the JSON data
-    logging.info('Step 11: Attempt to open file and write json_file info')
-    with open(json_output_filename, 'r') as f:
-        logging.info('Step 11: Setting data variable')
-        data = json.load(f)
-        logging.info('Step 11: Setting data variable: success')
-
-    #############################################################
-    # Step 12 ###################################################
-    #############################################################
-		
-    logging.info(f'Step 12: Start of video_info object')
-    logging.info(f'Step 12: index: {download_number}')
-    logging.info(f'Step 12: id: {data["id"]}')
-    logging.info(f'Step 12: title: %s', display_title)
-    logging.info(f'Step 12: date_posted: {data["upload_date"]}')
-    logging.info(f'Step 12: archive_date: {datetime.now()}')
-    logging.info(f'Step 12: user: {data["uploader"]}')
-    logging.info(f'Step 12: video_url: {data["webpage_url"]}')
-    logging.info(f'Step 12: length: unknown')
-    logging.info(f'Step 12: filename: {data["_filename"]}')
-    logging.info(f'Step 12: file size: %s', get_file_size(data["_filename"]))
-    logging.info(f'Step 12: resolution: unknown')
-    logging.info(f'Step 12: aspect_ratio: unknown')
-    logging.info(f'Step 12: thumbnail: {directory}/thumbnails/{sanitize_filename(output)}.{extension}')
-
-    #############################################################
-    # Step 13 ###################################################
-    #############################################################
-    # Extract the information
-    # Also set the default filename to grab the aspect_ratio/resolution
+    # Set the default filename to grab the aspect_ratio/resolution
     fnprobe = data['_filename']
-    logging.info(f'Step 13: fnprobe: {fnprobe}')
     # Set filename first as this is most important
     # This does NOT set {bdir} as that is not a valid location under /app
     filename = data["_filename"]
-    logging.info(f'Step 13: Filename variable: %s', fnprobe)
     logging.info(f'Step 13: {get_video_duration(fnprobe)}')
     video_info = {
         'index': download_number,
@@ -548,9 +752,9 @@ def download(url, args, cutout, output_base):
         'length': format_duration(get_video_duration(fnprobe)),
         'filename': f'{bdir}{filename}',
         'thumbnail': f'{bdir}{directory}/thumbnails/{sanitize_filename(output)}.{extension}',
-        'tmbfp': f'{directory}/thumbnails/{sanitize_filename(output)}.{extension}',
+        'tmbfp': f'{file}', # set from image extraction way above
         'json_file': f'{bdir}{directory}/json/{sanitize_filename(output)}.json',
-        'file_size_bytes': get_file_size(filename),
+        'file_size_bytes': tfilesize,
         'file_size_readable': "unknown",
         'resolution': "unknown",
         'aspect_ratio': "unknown"
@@ -573,14 +777,12 @@ def download(url, args, cutout, output_base):
     logging.info('vInfo: tmbfp: "%s"', video_info['tmbfp'].replace('data/', '', 1))
 
     #############################################################
-    # Step 14 ###################################################
+    # Step 12 ###################################################
     #############################################################
     logging.info('Step 14: Grab filename from JSON, get resolution and aspect ratio with ffprobe')
     # Get the filename of the downloaded file from the JSON output
     downloaded_video_filename = video_info['filename']
-    logging.info('Step 14: Set downloaded_video_filename from voutput')
     # After the download is complete, get the actual resolution of the downloaded video
-    # actual_resolution = get_video_resolution(downloaded_video_filename)
     actual_resolution = get_video_resolution(fnprobe)
     logging.info('Step 14: Set actual_resolution from get_video_resolution function using downloaded_video_filename')
     # Update the 'resolution' field in the video_info dictionary
@@ -620,7 +822,7 @@ def download(url, args, cutout, output_base):
     logging.info('Step 14: Adding file_size_readable to video_info[]')
 
     #############################################################
-    # Step 15 ###################################################
+    # Step 13 ###################################################
     #############################################################
     logging.info('Step 15: Add video URL to global mongodb pool')
     # Add the video URL and download path to the global pool
@@ -628,7 +830,7 @@ def download(url, args, cutout, output_base):
     logging.info('Step 15: mongoDB: adding the video URL to the global pool')
 
     #############################################################
-    # Step 16 ###################################################
+    # Step 14 ###################################################
     #############################################################
     logging.info('Step 16: Insert video_info[] data into collection in mongodb database')
     # Add the video_info data into the mongodb
@@ -636,7 +838,7 @@ def download(url, args, cutout, output_base):
     logging.info('Step 16: Adding video_info[] to collection')
 
     #############################################################
-    # Step 17 ###################################################
+    # Step 15 ###################################################
     #############################################################
     # Write the extracted information to a new file
     extracted_info_filename = f'{directory}/json/{output}_info.json'
@@ -653,22 +855,20 @@ def download(url, args, cutout, output_base):
         os.remove(json_output_filename) # disable this for debug for original json data
         logging.info('Step 17: Removing old JSON data')
 
-		# with lock: # No longer need the original JSON file - removing this to conserve space
     #############################################################
-    # Step 18 ###################################################
+    # Step 16 ###################################################
     #############################################################
-    #    time.sleep(5)
     except Exception as e:
         print(f"Error writing to file {extracted_info_filename}: {e}")
         logging.info(f'Step 18: remove original JSON: %s', json_output_filename)
         os.remove(json_output_filename) # disable this for debug for original json data
 
     #############################################################
-    # Step 19 ###################################################
+    # Step 17 ###################################################
     #############################################################
     logging.info('Step 19: "Return"')
     return info, err
-		
+
 @app.route('/download', methods=['POST'])
 def download_videos():
     # Determine the directory to save the videos to based on the username
@@ -677,7 +877,6 @@ def download_videos():
         username = session['user_id']
     else:
         username = 'public'  # default value if user is not logged in
-    # video_dir = f'{directory}/videos/{username}'
     urls = [url.strip() for url in request.form['url'].split('\n')]
     args = request.form['args'].split(' ')
     # Get the path to the cookies file from the form
@@ -700,7 +899,7 @@ def download_videos():
         return 'Download started. The following errors occurred:\n' + '\n'.join(str(errors))
     else:
         return 'Download started', 200
-				
+
 #def delete_old_files():
 #    while True:
 #        now = time.time()
@@ -733,15 +932,26 @@ def serve_data(filename):
 
 @app.route('/')
 def home():
+    # Get the current page number and number of items per page from the query parameters
+    p = request.args.get('p', default=1, type=int)
+    ipp = request.args.get('ipp', default=20, type=int)
+    offset = (p - 1) * ipp
+    # Calculate the total number of videos
+    total_videos = collection.count_documents({}) 
+    # Calculate the total number of pages
+    total_pages = (total_videos + ipp - 1) // ipp
     # Query MongoDB to get the video data
-    videos = list(collection.find())
+    # videos = list(collection.find())
+    videos = list(collection.find({}).skip(offset).limit(ipp))
     # Modify the tmbfp attribute by removing "data/" prefix and replace special characters
     for video in videos:
         video['tmbfp'] = video['tmbfp'].replace("data/", "", 1)
         video['tmbfp'] = video['tmbfp'].replace('(', '%28').replace(')', '%29').replace('\\', '%5C')
         video['tmbfp'] = unquote(video['tmbfp'])
     # Pass the video data to the template
-    return render_template('index.html', videos=videos)
+    directory = getattr(g, 'directory', None)
+    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.debug = False
+    app.run(host='0.0.0.0', threaded=True)
