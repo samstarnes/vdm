@@ -71,7 +71,7 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # - Progress bar ✅
 # - customizable number of items displayed (kinda) ✅
 
-bdir = '/srv/docker/anomaly-ytdlp/'
+bdir = '/srv/docker/anomaly-ytdlp/' # Change me (no .env config for now)
 app.secret_key = 'zu7t101tyNVBExIw2FzHx3R4elulSG3qPC1WqpkzSV2CNQG93Rh1FFcat4SMgphw'
 # Create a lock
 lock = Lock()
