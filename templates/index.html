@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-		<title>YT-DLP Downloader</title>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<title>VDM/Video Download Manager</title>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
@@ -13,11 +13,35 @@
 	</head>
 	<body style="background: #171717;overflow-x: hidden;">
 		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
-			<div class="container"><a class="navbar-brand d-flex align-items-center" href="#"><span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;"><i class="material-icons">video_library</i></span><span style="color: rgb(255,255,255);font-size: 25px;"><strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager</span></a><button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+			<div class="container">
+			<a class="navbar-brand d-flex align-items-center" href="/">
+				<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
+					<i class="material-icons">video_library</i>
+				</span>
+				<span style="color: rgb(255,255,255);font-size: 25px;">
+					<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
+				</span>
+			</a>
+			<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
+				<span class="visually-hidden">Toggle navigation</span>
+				<span class="navbar-toggler-icon"></span>
+			</button>
 				<div class="collapse navbar-collapse" id="navcol-5">
 					<ul class="navbar-nav ms-auto">
-						<li class="nav-item"><a class="nav-link" href="/login" id="login-link">Login</a>
-							<div id="user-info"><span id="username" style="display: none;"><a href="#" id="username-link"></a><div id="user-menu" style="display: none;"><a href="#">Settings</a><a href="/logout" id="logout-link">Logout</a></div></span></div>
+						<li class="nav-item">
+							<a class="nav-link" href="/login" id="login-link">Login</a>
+							<div id="user-info">
+								<span id="username" style="display: none;">
+									<a href="#" id="username-link"></a>
+										<div id="user-menu" style="display: none;">
+											<a href="#">Settings</a>
+											<a href="/logout" id="logout-link">Logout</a>
+										</div>
+								</span>
+							</div>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/login" id="login-link">Login</a>
 						</li>
 					</ul>
 				</div>
@@ -27,13 +51,23 @@
 			<div class="row">
 				<div class="col-xxl-5" style="padding-top: 20px;padding-bottom: 20px;text-align: center;">
 					<form id="download-form">
-						<div><label class="form-label" for="url">Enter Video URL(s):</label><br><textarea id="url" name="url" rows="10" cols="50" placeholder="Enter one URL per line" style="text-align: left;width:80%"></textarea></div>
+						<div>
+							<label class="form-label" for="url">Enter Video URL(s):</label>
+							<br>
+							<textarea id="url" name="url" rows="10" cols="50" placeholder="Enter one URL per line" style="text-align: left;width:80%"></textarea>
+						</div>
 					</div>
 					<div class="col" style="padding-top: 20px;padding-bottom: 20px;">
 						<div>
-							<div><label class="form-label" for="args">Custom Arguments:</label><br><input type="text" id="args" name="args" placeholder="Enter optional arguments" style="width: 100%;"></div>
-							<div><label class="form-label" for="cutout">Timestamped Cutout (start-end):</label><br><input type="text" id="cutout" name="cutout" placeholder="Enter start &amp; end times for cutout" style="width: 100%;"></div>
-							<div><label class="form-label" for="output">Output File Name:</label><br><input type="text" id="output" name="output" placeholder="Enter optional filename" style="width: 100%;"></div>
+							<div><label class="form-label" for="args">Custom Arguments:</label><br>
+								<input type="text" id="args" name="args" placeholder="Enter optional arguments" style="width: 100%;">
+								</div>
+							<div><label class="form-label" for="cutout">Timestamped Cutout (start-end):</label><br>
+								<input type="text" id="cutout" name="cutout" placeholder="Enter start &amp; end times for cutout" style="width: 100%;">
+								</div>
+							<div><label class="form-label" for="output">Output File Name:</label><br>
+								<input type="text" id="output" name="output" placeholder="Enter optional filename" style="width: 100%;">
+								</div>
 						</div>
 					</div>
 				</div>
@@ -49,24 +83,16 @@
 				</div>
 			</div>
 		</form>
-		
-		<div id="progress-bar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
-		
-		<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
-		<script>
-				var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
-				socket.on('download_progress', function(msg) {
-						document.getElementById('progress-bar').style.width = msg.progress + '%';
-				});
-		</script>
-
-		
+		<div id="progress-bar" style="width: 0%; height: 30px; background-color: #4CAF50;">
+			<div id="progress-info" style="position: absolute; width: 100%; text-align: center; color:rgb(255,255,255,1);background-color:rgb(45,45,45,1);"></div>
+		</div>
 		<hr style="color: #bababa;border-bottom: 2px solid #bababa;">
 		<div class="row" style="text-align: center;padding-bottom: 20px;">
 			<div class="col">
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Duration</button>
+					<div class="dropdown">
+						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Duration</button>
 						<div class="dropdown-menu dropdown-menu-dark">
 							<a class="dropdown-item" href="#">Name</a>
 							<a class="dropdown-item" href="#">File Size</a>
@@ -85,32 +111,39 @@
 			<div class="col">
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<div class="dropdown"><button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Dropdown </button>
-						<div class="dropdown-menu dropdown-menu-dark">
-							<a class="dropdown-item" href="#">10</a>
-							<a class="dropdown-item" href="#">25</a>
-							<a class="dropdown-item" href="#">50</a>
-							<a class="dropdown-item" href="#">100</a>
-							<a class="dropdown-item" href="#">150</a>
-							<a class="dropdown-item" href="#">250</a>
-							<a class="dropdown-item" href="#">Infinite Scrolling</a>
+					<div class="dropdown">
+						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button" id="items-per-page-button">20</button>
+						<div class="dropdown-menu dropdown-menu-dark" id="items-per-page-dropdown">
+							<a class="dropdown-item" href="?ipp=8">8</a>
+							<a class="dropdown-item" href="?ipp=20">20</a>
+							<a class="dropdown-item" href="?ipp=60">60</a>
+							<a class="dropdown-item" href="?ipp=100">100</a>
+							<a class="dropdown-item" href="?ipp=140">140</a>
+							<a class="dropdown-item" href="?ipp=200">200</a>
+							<a class="dropdown-item" href="?ipp=9999">9999</a>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		<style>
-			.thumbnail-wrapper {
-			position: relative;
-			width: 100%;
-			padding-top: 56.25%; /* 16:9 Aspect Ratio */
-			background-position: center center; 
-			background-repeat: no-repeat; 
-			background-size: cover;
-			}
-		</style>
+		<div class="row" style="text-align: center;padding-bottom: 20px;">
+			<div class="col" style="font-size:20px;">
+				<!-- Previous page link -->
+				{% if p > 1 %}
+				<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
+				{% endif %}
+				<!-- Page number links -->
+				{% for p in range(1, total_pages + 1) %}
+				<a href="?p={{ p }}&ipp={{ ipp }}">{{ p }}</a>
+				{% endfor %}
+				<!-- Next page link -->
+				{% if p < total_pages %}
+				<a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
+				{% endif %}
+			</div>
+		</div>
 		<div class="container">
-			<div class="row row-cols-1 row-cols-md-3 g-4">
+			<div class="row row-cols-1 row-cols-md-4 g-4">
         {% for video in videos %}
         <div class="col">
 					<div class="card h-100">
@@ -131,6 +164,23 @@
 							<p class="card-text">Aspect Ratio: {{ video.aspect_ratio }}</p>
 							<p class="card-text">Video ID: {{ video.id }}</p>
 							<p class="card-text">mongoDB ID: {{ video._id }}</p>
+							<p class="card-text dirlink">Download Link: {{ video.filename }}</p>
+							<script>
+  							var bdir = "{{ bdir }}" // passing base directory
+  							function replaceSpacesWithNbsp(str) {
+      						return str.replace(/ +/g, function(match) {
+          					return Array(match.length + 1).join('&nbsp;');
+      						});
+  							}
+  							document.addEventListener('DOMContentLoaded', function() {
+      						var linkElements = document.querySelectorAll('.card-text.dirlink');
+      						linkElements.forEach(function(linkElement) {
+          					var fullPath = linkElement.textContent.replace('Download Link: ','').replace(bdir,'');
+          					var linkPath = fullPath.substring(fullPath.indexOf('/data/'));
+          					linkElement.innerHTML = 'Download Link: <a href="' + encodeURI(linkPath) + '">' + linkPath + '</a>';
+      						});
+  							});
+							</script>
 						</div>
 						<div class="card-footer">
 							<small class="text-muted">Download Date: {{ video.archive_date }}</small><br>
@@ -140,7 +190,24 @@
 				</div>
         {% endfor %}
 			</div>
+			<div class="row" style="text-align: center;padding-bottom: 20px;">
+				<div class="col" style="font-size:20px;">
+					<!-- Previous page link -->
+					{% if p > 1 %}
+					<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
+					{% endif %}
+					<!-- Page number links -->
+					{% for p in range(1, total_pages + 1) %}
+					<a href="?p={{ p }}&ipp={{ ipp }}">{{ p }}</a>
+					{% endfor %}
+					<!-- Next page link -->
+					{% if p < total_pages %}
+					<a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
+					{% endif %}
+				</div>
+			</div>
 		</div>
+		<!-- ############### Javascript begins here ############### -->
 		<script>
 			$(document).ready(function(){
 				$("#download-form").on('submit', function(event){
@@ -151,8 +218,10 @@
 					});
 				});
 			});
-			</script><script>
+		</script>
+		<script>
 			$(document).ready(function(){
+			
 				// Check if the user is logged in
 				if (sessionStorage.getItem('username')) {
 					// If the user is logged in, hide the login link and show the username and user menu
@@ -187,9 +256,77 @@
 						$('#login-link').show();
 					});
 				});
-			</body>
-		</html>
-	</script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
-</body>
+			});
+		</script>
+		<script>
+			var source = new EventSource("/stream");
+			source.onopen = function(event) {
+				console.log("Connection to server opened.");
+			};
+			source.addEventListener('download_progress', function(event) {
+				var data = JSON.parse(event.data);
+				console.log(data);
+				var progress = data.progress;
+				var total = data.total;
+				var speed = data.speed;
+				var eta = data.eta;
+				document.getElementById('progress-bar').style.width = progress + '%';
+				document.getElementById('progress-info').innerText = total + " " + speed;
+			});
+			source.onerror = function(event) {
+				console.error("Error occurred:", event);
+			};
+		</script>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				var dropdownItems = document.querySelectorAll('#items-per-page-dropdown .dropdown-item');
+				var button = document.getElementById('items-per-page-button');
+				// Set the button's text from the cookie
+				var itemsPerPage = getCookie('ipp');
+				if (itemsPerPage) {
+					button.textContent = itemsPerPage;
+				}
+				// Add click event listeners to the dropdown items
+				dropdownItems.forEach(function(item) {
+					item.addEventListener('click', function(event) {
+            // Update the button's text
+            button.textContent = event.target.textContent;
+            // Store the selected value in a cookie
+            setCookie('ipp', event.target.textContent, 365);
+					});
+				});
+			});
+			// Function to set a cookie
+			function setCookie(name, value, days) {
+				var expires = "";
+				if (days) {
+					var date = new Date();
+					date.setTime(date.getTime() + (days*24*60*60*1000));
+					expires = "; expires=" + date.toUTCString();
+				}
+				document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+			}
+			// Function to get a cookie
+			function getCookie(name) {
+				var nameEQ = name + "=";
+				var ca = document.cookie.split(';');
+				for(var i=0;i < ca.length;i++) {
+					var c = ca[i];
+					while (c.charAt(0)==' ') c = c.substring(1,c.length);
+					if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+				}
+				return null;
+			}
+		</script>
+		<script>
+			document.getElementById('items-per-page-dropdown').addEventListener('click', function(event) {
+				if (event.target.tagName === 'A') {
+					var itemsPerPage = event.target.textContent;
+					var url = new URL(window.location.href);
+					url.searchParams.set('ipp', itemsPerPage);
+					window.location.href = url.toString();
+				}
+			});
+		</script>
+	</body>
 </html>
