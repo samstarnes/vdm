@@ -21,23 +21,24 @@
 
 
 ## Features not included yet
-- video player page
 - admin page
-- customizable items ordered by duration, size, download date (ID), posted date
-- configurable public item automatic deletion (finished but disabled), cookie file, themes
 - calender filter for searching between dates
-- multi-user login & registration
-- search function
-- filter function
-- normal vs reverse order 
-- public vs private view (or both) of videos
+- configurable public item automatic deletion (finished but disabled), cookie file, themes
 - configurable option of JSON saving - (metadata is managed by mongoDB and I'm making that a requirement)
+- customizable items ordered by duration, size, download date (ID), posted date
+- filter function
+- multi-user login & registration & login/registration page
+- normal vs reverse order
+- public vs private view (or both) of videos
+- search function
+- video player page
 
 ### Known Bugs
 - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
 - Sometimes the progress bugs out a little and stops updating (looking into this)
 - Progress begins with the download but then merges the audio and video so it resets the progress bar to 0%, goes back to 100%
 - SSE seems to unexpectedly close after some time (need to determine if it can be reopened)
+- data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return
 
 #### Personal Note
-I've already used this for over 240 videos and it's worked so far. There may be some changes on the backend with data management to identify public vs private videos as there currently is no method.
+I've already used this for over 240 videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
