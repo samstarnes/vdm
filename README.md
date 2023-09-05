@@ -2,13 +2,19 @@
 
 ### VDM is a frontend for youtube-dl. It's coded using python with mongoDB as the backend database.
 
-#### This is still in early development and not all features have been implemented. Expect slow updates. 
+#### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
+
+## Requirements
+
+- cookies.txt file
+- docker
+- some light editing
 
 ## Installation
 
 `do note this is not the final installation method and it will be made easier in the future`
 
-#### 1) First modify the `cookies.txt` file in netscape format with *your* cookies.
+#### 1) First modify the `cookies.txt` file in netscape format with *your* cookies. There are tools, addons and extensions to grab these (only required for sites that require a login, otherwise empty file is fine) 
 
 #### 2) Modify `line 74` in `app.py` to your base directory. 
 - For example, I export these files to `/srv/docker/anomaly-ytdlp` so I should expect to find `app.py` like so:
