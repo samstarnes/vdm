@@ -2,9 +2,11 @@
 
 ### VDM is a frontend for youtube-dl. It's coded using python with mongoDB as the backend database.
 
-#### This is still in early development and not all features have been implemented.
+#### This is still in early development and not all features have been implemented. Expect slow updates. 
 
 ## Installation
+
+`do note this is not the final installation method and it will be made easier in the future`
 
 #### 1) First modify the `cookies.txt` file in netscape format with *your* cookies.
 
@@ -32,13 +34,18 @@
 - public vs private view (or both) of videos
 - search function
 - video player page
+- have the output & cutout work for only a single URL
 
-### Known Bugs
+### Known Issues
 - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
 - Sometimes the progress bugs out a little and stops updating (looking into this)
 - Progress begins with the download but then merges the audio and video so it resets the progress bar to 0%, goes back to 100%
 - SSE seems to unexpectedly close after some time (need to determine if it can be reopened)
-- data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return
+- Data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return
+- Currently using the cutout time or renaming of a file is not recommended as I've done no testing nor will it work with multiple URLs. I do not recommend using that. 
+
+### Possible Issues
+- I have absolutely no idea what happens if you attempt to download a URL with multiple videos on the same page. Haven't tested.
 
 #### Personal Note
-I've already used this for over 240 videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
+I've already used this for over 250 videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
