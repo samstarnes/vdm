@@ -49,7 +49,7 @@
 - SSE seems to unexpectedly close after some time (need to determine if it can be reopened).
 - Data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return.
 - Currently using the cutout time or renaming of a file is not recommended as I've done no testing nor will it work with multiple URLs. I do not recommend using that.
-- Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link with fail to complete.
+- Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link will fail to complete.
 
 ### Possible Issues
 - I have absolutely no idea what happens if you attempt to download a URL with multiple videos on the same page. Haven't tested.
