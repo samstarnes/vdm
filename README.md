@@ -20,8 +20,10 @@
 - For example, I export these files to `/srv/docker/anomaly-ytdlp` so I should expect to find `app.py` like so:
 - - `/srv/docker/anomaly-ytdlp/app.py` 
 - - \(This will be changed later\)
+ 
+### 3) Modify .env with a new MeiliSearch key
 
-#### 3) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
+#### 4) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
 
 ## Appearance (WIP - will change over time)
 
