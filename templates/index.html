@@ -11,6 +11,7 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.css" />
 	</head>
 	<body style="background: #171717;overflow-x: hidden;">
 		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
@@ -93,7 +94,7 @@
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
 					<div class="dropdown">
-						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Duration</button>
+						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Sort By</button>
 						<div class="dropdown-menu dropdown-menu-dark">
 							<a class="dropdown-item" href="#">Name</a>
 							<a class="dropdown-item" href="#">File Size</a>
@@ -105,8 +106,12 @@
 				</div>
 			</div>
 			<div class="col">
-				<div><span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
-					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);"><input type="text">
+				<div>
+					<span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
+					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
+					<input type="search" id="search-input" />
+					<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
+					<div id="resultsContainer"></div>
 				</div>
 			</div>
 			<div class="col">
@@ -153,7 +158,7 @@
 						<div class="card-body">
 							<!-- Display the video title and link to the video -->
 							<h5 class="card-title">
-								<a href="{{ video.video_url }}">{{ video.title }}</a>
+								<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
 							</h5>
 							<!-- Display other video data -->
 							<p class="card-text">User: {{ video.user }}</p>
@@ -208,7 +213,56 @@
 				</div>
 			</div>
 		</div>
-		<!-- ############### Javascript begins here ############### -->
+		<!-- ############### Javascript begins here ############### --> 
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+			// This function is called when the DOM is fully loaded
+			// Get the input element and the results container
+			const searchInput = document.getElementById('search-input');
+			const resultsContainer = document.getElementById('resultsContainer');
+			function search(query) {
+				// Backend endpoint
+				const BACKEND_HOST = 'https://vdm.0x0.la/'; // Replace with your backend host
+				const url = `${BACKEND_HOST}/search`;
+				// Send the search query to the backend
+				fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ query: query }) // Send the query to your backend
+				})
+				.then(response => response.json())
+				.then(data => {
+					// Clear previous results
+					resultsContainer.innerHTML = '';
+					// Handle the search results here
+					data.hits.forEach(hit => {
+						// Create a new div element for each result
+						var resultDiv = document.createElement('div');
+						resultDiv.textContent = hit.title; // Assume 'title' is a field in your documents
+						// Add the result div to the results container
+						resultsContainer.appendChild(resultDiv);
+					});
+				})
+				.catch(error => {
+					console.error('Error during search request:', error);
+					// Handle errors here
+				});
+			}
+			// Event listener for the input's input event
+			searchInput.addEventListener('input', function () {
+				// Get the current input value
+				var query = searchInput.value;
+				// If the query isn't empty, search; otherwise, clear the results
+				if (query.trim()) {
+					search(query);
+				} else {
+					resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
+				}
+			});
+		});
+		</script>
 		<script>
 			$(document).ready(function(){
 				$("#download-form").on('submit', function(event){
@@ -222,7 +276,6 @@
 		</script>
 		<script>
 			$(document).ready(function(){
-			
 				// Check if the user is logged in
 				if (sessionStorage.getItem('username')) {
 					// If the user is logged in, hide the login link and show the username and user menu
