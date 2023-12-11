@@ -21,7 +21,7 @@
 - - `/srv/docker/anomaly-ytdlp/app.py` 
 - - \(This will be changed later\)
  
-### 3) Modify .env with a new MeiliSearch key
+#### 3) Modify .env with a new MeiliSearch key
 
 #### 4) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
 
