@@ -38,9 +38,10 @@
 - multi-user login & registration & login/registration page
 - normal vs reverse order
 - public vs private view (or both) of videos
-- search function
-- video player page
+- search function (WIP #1) 
+- video player page (it looks terrible right now) 
 - have the output & cutout work for only a single URL
+- download comments as it's wanted by /u/ECrispy
 
 ### Known Issues
 - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
@@ -52,7 +53,7 @@
 - Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link will fail to complete.
 
 ### Possible Issues
-- I have absolutely no idea what happens if you attempt to download a URL with multiple videos on the same page. Haven't tested.
+- N/A
 
 #### Personal Note
-I've already used this for over 700 videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
+I've already used this for over ~~700~~ 950+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
