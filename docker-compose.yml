@@ -9,8 +9,17 @@ services:
       - .:/app
     depends_on:
       - mongo
+      - redis
+    restart: unless-stopped
   mongo:
     container_name: ytdldb
     image: mongo
     ports:
       - "56001:27017"
+    restart: unless-stopped
+  redis:
+    image: redis
+    container_name: ytdlredis
+    ports:
+      - "56002:6379"
+    restart: unless-stopped
