@@ -2,7 +2,7 @@
 
 ### VDM is a frontend for youtube-dl. It's coded using python with mongoDB as the backend database.
 
-# You are looking at the beta version. This will either be broken or have undeveloped features. This is not the recommended version to use.
+# You are looking at the beta version. This will either be broken in some way or have undeveloped features. This is not the recommended version to use but will have the fastest [working] updates 
 
 #### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
 
@@ -42,9 +42,10 @@
 - multi-user login & registration & login/registration page
 - normal vs reverse order
 - public vs private view (or both) of videos
-- search function
-- video player page
+- search function (WIP #1) 
+- video player page (looks terrible right now) 
 - have the output & cutout work for only a single URL
+- download comments as it's wanted by /u/ECrispy
 
 ### Known Issues
 - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
@@ -56,7 +57,7 @@
 - Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link will fail to complete.
 
 ### Possible Issues
-- I have absolutely no idea what happens if you attempt to download a URL with multiple videos on the same page. Haven't tested.
+- N/A
 
 #### Personal Note
-I've already used this for over 700 videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
+I've already used this for over ~~700~~ 950+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data and bump versions.
