@@ -41,7 +41,8 @@
 - search function (WIP #1) 
 - video player page (it looks terrible right now) 
 - have the output & cutout work for only a single URL
-- download comments as it's wanted by /u/ECrispy
+- download comments | requested by /u/ECrispy
+- download playlists | requested by /u/barry_flash
 
 ### Known Issues
 - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
