@@ -11,6 +11,8 @@ services:
       - mongo
       - redis
     restart: unless-stopped
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
   mongo:
     container_name: ytdldb
     image: mongo
@@ -23,3 +25,13 @@ services:
     ports:
       - "56002:6379"
     restart: unless-stopped
+  meilisearch:
+    image: getmeili/meilisearch:v1.4
+    container_name: ytdlmeili
+    ports:
+      - "56003:7700"
+    restart: unless-stopped
+    volumes:
+      - ./meili_data:/meili_data
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
