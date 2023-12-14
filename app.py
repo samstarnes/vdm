@@ -43,6 +43,7 @@ docker_ytdl = os.getenv('DOCKER_YTDL')
 docker_ytdldb = os.getenv('DOCKER_YTDLDB')
 docker_ytdlmeili = os.getenv('DOCKER_YTDLMEILI')
 docker_ytdlredis = os.getenv('DOCKER_YTDLREDIS')
+meili_host_url = os.getenv('MEILI_HOST_URL', 'http://localhost:7700')
 app = Flask(__name__, static_folder='static')
 r = redis.Redis(host=f'{docker_ytdlredis}', port=6379, db=0)  # adjust these parameters to your Redis configuration
 app.register_blueprint(sse, url_prefix='/stream')
@@ -134,6 +135,17 @@ VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'flv', 'mov', 'avi', 'wmv']
 # Set up Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+def get_meilisearch_public_key():
+    url = 'http://localhost:56003/keys'
+    headers = {'Authorization': f'Bearer {meili_master_key}'}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        keys = response.json().get('results', [])
+        for key in keys:
+            if key.get('description') == 'Use it to search from the frontend':
+                return key.get('key')
+    return None
 
 # meilisearch additions ####################################################################################
 def process_and_add_to_meilisearch():
@@ -1073,7 +1085,7 @@ def home():
         video['tmbfp'] = unquote(video['tmbfp'])
     # Pass the video data to the template
     directory = getattr(g, 'directory', None)
-    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory)
+    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory, meili_host_url=meili_host_url, search_api_key=search_api_key)
 
 if __name__ == '__main__':
     app.debug = False
