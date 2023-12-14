@@ -30,6 +30,9 @@
 				<div class="collapse navbar-collapse" id="navcol-5">
 					<ul class="navbar-nav ms-auto">
 						<li class="nav-item">
+							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
+						</li>
+						<li class="nav-item">
 							<a class="nav-link" href="/login" id="login-link">Login</a>
 							<div id="user-info">
 								<span id="username" style="display: none;">
@@ -93,7 +96,7 @@
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
 					<div class="dropdown">
-						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Duration</button>
+						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Sort By</button>
 						<div class="dropdown-menu dropdown-menu-dark">
 							<a class="dropdown-item" href="#">Name</a>
 							<a class="dropdown-item" href="#">File Size</a>
@@ -105,10 +108,28 @@
 				</div>
 			</div>
 			<div class="col">
-				<div><span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
-					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);"><input type="text">
+				<div>
+					<span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
+					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
+					<form id="search-form" style="padding-bottom:15px;">
+					  <input type="search" id="search-input" class="searchbox"/>
+					</form>
+					<div id="resultsContainer" class="resultsContainer"></div>
 				</div>
 			</div>
+			<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
+			<script>
+        // Initialize the search bar with your specific settings
+				const meiliHostUrl = "{{ meili_host_url }}"; 
+				const searchApiKey = "{{ search_api_key }}";
+        docsSearchBar.default({
+          hostUrl: meiliHostUrl,
+          apiKey: searchApiKey,
+          indexUid: 'yt-dlp_index',
+          inputSelector: '#search-input',
+          // Additional configuration...
+        });
+      </script>
 			<div class="col">
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
@@ -153,7 +174,7 @@
 						<div class="card-body">
 							<!-- Display the video title and link to the video -->
 							<h5 class="card-title">
-								<a href="{{ video.video_url }}">{{ video.title }}</a>
+								<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
 							</h5>
 							<!-- Display other video data -->
 							<p class="card-text">User: {{ video.user }}</p>
@@ -208,7 +229,60 @@
 				</div>
 			</div>
 		</div>
-		<!-- ############### Javascript begins here ############### -->
+		<!-- ############### Javascript begins here ############### --> 
+		<script>
+		document.addEventListener('DOMContentLoaded', function () {
+		  // This function is called when the DOM is fully loaded
+		  // Get the input element and the results container
+		  const searchInput = document.getElementById('search-input');
+		  const resultsContainer = document.getElementById('resultsContainer');
+		  function search(query) {
+			  // Clear previous results
+			  resultsContainer.innerHTML = '';
+			  // Send the search query to the backend
+				fetch('/search', {
+				  method: 'POST',
+				  headers: {
+					  'Content-Type': 'application/json'
+				  },
+				  body: JSON.stringify({ query: query }) // Send the query to your backend
+			  })
+			  .then(response => response.json())
+			  .then(data => {
+				  let isAlternate = false; // Flag for alternate background colors
+			    // Handle the search results here
+				  data.hits.forEach(hit => {
+					  // Create a new div element for each result
+					  var resultLink = document.createElement('a');
+					  resultLink.textContent = hit.title; // Set the text to the title
+						resultLink.href = `/videos/${hit.primaryKey}`; // Set the href to video URL
+						resultLink.target = "_blank"; // Open in new tab
+						resultLink.style.width = '100%';
+						resultLink.style.display = 'inline-block';
+						resultLink.style.background = isAlternate ? 'rgb(15,15,15,1)' : 'rgb(40,40,40,1)';
+					  // Add the result href and line break to the results
+					  resultsContainer.appendChild(resultLink);
+						resultsContainer.appendChild(document.createElement('br'));
+						isAlternate = !isAlternate; // Toggle flag for next item
+				  });
+			  })
+			  .catch(error => {
+				  console.error('Error during search request:', error);
+			  });
+		  }
+		  // Event listener for the input's input event
+		  searchInput.addEventListener('input', function () {
+		  	// Get the current input value
+				var query = searchInput.value;
+				// If the query isn't empty, search; otherwise, clear the results
+				if (query.trim()) {
+					search(query);
+				} else {
+					resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
+				}
+			});
+		});
+		</script>
 		<script>
 			$(document).ready(function(){
 				$("#download-form").on('submit', function(event){
@@ -222,7 +296,6 @@
 		</script>
 		<script>
 			$(document).ready(function(){
-			
 				// Check if the user is logged in
 				if (sessionStorage.getItem('username')) {
 					// If the user is logged in, hide the login link and show the username and user menu
