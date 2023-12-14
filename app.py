@@ -2,37 +2,49 @@ import platform; print(platform.python_version())
 import os
 import re
 import sys
+import glob
 import math
 import time
 import json
 import magic
 import redis
 import shutil
+import pymongo
 import hashlib
 import logging
 import zipfile
+import requests
 import threading
 import subprocess
 import validators
+import meilisearch
 import flask_login
 import urllib.request
 from PIL import Image
 from flask_sse import sse
 from threading import Lock
 from datetime import datetime
+from dotenv import load_dotenv
 from json import JSONDecodeError
 from pymongo import MongoClient
+from meilisearch import Client
 from urllib.parse import urlparse
 from urllib.parse import quote, unquote
 from bson.objectid import ObjectId
-from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, Response, json, g
+from werkzeug.urls import url_encode
+from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, Response, json, g, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
-import glob
 # import concurrent.futures
 # from threading import Timer
+load_dotenv()
+meili_master_key = os.getenv('MEILI_MASTER_KEY')
+secret_key = os.getenv('SECRET_KEY')
+docker_ytdl = os.getenv('DOCKER_YTDL')
+docker_ytdldb = os.getenv('DOCKER_YTDLDB')
+docker_ytdlmeili = os.getenv('DOCKER_YTDLMEILI')
+docker_ytdlredis = os.getenv('DOCKER_YTDLREDIS')
 app = Flask(__name__, static_folder='static')
-r = redis.Redis(host='ytdlredis', port=6379, db=0)  # adjust these parameters to your Redis configuration
-app.config["REDIS_URL"] = "redis://redis:6379"
+r = redis.Redis(host=f'{docker_ytdlredis}', port=6379, db=0)  # adjust these parameters to your Redis configuration
 app.register_blueprint(sse, url_prefix='/stream')
 # Set system default path to /app
 os.environ['PATH'] += os.pathsep + '/app'
@@ -49,18 +61,17 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # Things left to add
 
 # High Priority
-# - create video player page (pull data with _id as URL)
 # - customizable items ordered by duration, size, download date (ID), posted date
 # - configurable public item automatic deletion, cookie file, themes
 
 # Low Priority
 # - calender filter for searching between dates
 # - multi-user login
-# - search function
 # - filter function
-# - normal vs reverse order 
+# - normal vs reverse order
 
 # Completed
+# - create video player page (pull data with _id as URL) ✅ 
 # - grab thumbnails for various downloads such as reddit ✅ 
 # - append IDs to filenames so no overwriting is possible ✅
 # - design new file structure ✅
@@ -70,17 +81,23 @@ app.logger.addHandler(logging.StreamHandler(sys.stdout))
 # - Stylize home page ✅
 # - Progress bar ✅
 # - customizable number of items displayed (kinda) ✅
+# - search function ✅
 
-bdir = '/srv/docker/anomaly-ytdlp/' # Change me (no .env config for now)
-app.secret_key = 'zu7t101tyNVBExIw2FzHx3R4elulSG3qPC1WqpkzSV2CNQG93Rh1FFcat4SMgphw'
+bdir = os.path.dirname(os.path.realpath(__file__))
+app.secret_key = secret_key
 # Create a lock
 lock = Lock()
-client = MongoClient('mongodb://ytdldb:27017/')
+# Create mongoDB connection
+client = MongoClient(f'mongodb://{docker_ytdldb}:27017/') ################################################################
 db = client['yt-dlp']
 # Create a new collection for the downloaded files
 collection = db['downloads']
 # Create a new collection for the global pool
 global_pool = db['global_pool']
+# Create meilisearch connection
+meili_client = Client(f'http://{docker_ytdlmeili}:7700', meili_master_key)  ################################################################
+# meili_url for reverse proxy
+meiliproxy = f'http://{docker_ytdlmeili}:7700'
 # Create a directory for the executables if it doesn't exist
 os.makedirs('/app', exist_ok=True)
 # Download yt-dlp
@@ -118,6 +135,83 @@ VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'flv', 'mov', 'avi', 'wmv']
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# meilisearch additions ####################################################################################
+def process_and_add_to_meilisearch():
+    logging.info('MeiliSearch: Fetching unprocessed from MongoDB')
+    print("Fetching unprocessed items from MongoDB...")
+    total_items = collection.count_documents({
+    "$or": [
+        {"processed": False},
+        {"processed": {"$exists": False}}
+    ]
+    })
+    processed_count = 0
+    # Calculate the number of batches
+    unprocessed_items = collection.find({"processed": {"$ne": True}})
+    docs_to_add = []
+    for video_info in unprocessed_items:
+        print("Processing items:", video_info['id'])
+        logging.info('MeiliSearch: Processing %s', video_info['id'])
+        meili_title = video_info.get('title', '')
+        meili_dateposted = video_info.get('date_posted', '')
+        meili_archivedate = video_info.get('archive_date', '')
+        if isinstance(meili_archivedate, datetime):
+            meili_archivedate = meili_archivedate.isoformat()
+        meili_user = video_info.get('user', '')
+        meili_url = video_info.get('video_url', '')
+        # Preparing the document for MeiliSearch
+        doc = {
+            'id': video_info['index'],
+            'primaryKey': video_info['id'],
+            'title': meili_title,
+            'date_posted': meili_dateposted,
+            'archive_date': meili_archivedate,
+            'user': meili_user,
+            'video_url': meili_url,
+        }
+        print(doc)
+        mheaders = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {meili_master_key}'
+        }
+        add_documents_endpoint = f'{meiliproxy}/indexes/yt-dlp_index/documents'
+        mresponse = requests.post(add_documents_endpoint, headers=mheaders, data=json.dumps([doc]))
+        if mresponse.status_code == 202:
+            print('Documents added successfully:', mresponse.json())
+        else:
+            print('Failed to add documents', mresponse.content)
+        # Mark the document as processed in MongoDB
+        collection.update_one({'id': video_info['id']}, {'$set': {'processed': True}})
+        # Add the batch of document to MeiliSearch
+        # meili_client.index('yt-dlp_index').add_documents(doc)
+        processed_count += 1
+        percentage_completed = (processed_count / total_items) * 100
+        print(f"MeiliSearch Progress: {percentage_completed:.2f}% of {processed_count}/{total_items}")
+        print(f"Title: {doc['title']}, VideoURL: {doc['video_url']}")
+
+# Run the check periodically for updating meilisearch ####################################################################################
+# while True: # disabled for now but will be in a loop ###################################################################################
+process_and_add_to_meilisearch() ####################################################################################
+#    time.sleep(3600)  # Sleep & loop
+
+@app.route('/search', methods=['POST'])
+def search():
+    # Get the query from the frontend
+    srchdata = request.json
+    query = srchdata.get('query', '')
+    # Prepare the MeiliSearch request
+    srchurl = f'{meiliproxy}/indexes/yt-dlp_index/search'
+    srchheaders = {
+        'Authorization': f'Bearer {meili_master_key}'
+    }
+    payload = {
+        'q': query
+    }
+    # Send the request to MeiliSearch
+    srchresponse = requests.post(srchurl, headers=srchheaders, json=payload)
+    # Return the results to the frontend
+    return jsonify(srchresponse.json())
+
 class User(UserMixin):
     def __init__(self, username, password):
         self.id = username
@@ -141,6 +235,33 @@ def load_user(user_id):
         return None
     user = User(user_record['username'], user_record['password'])
     return user
+
+@app.route('/meili', defaults={'path', ''}, methods=['GET', 'PUT', 'POST', 'DELETE'])
+@app.route('/meili/<path:path>', methods=['GET', 'POST', 'DELETE'])
+def proxy_to_meili(path):
+    # Forward the request to MeiliSearch
+    resp = requests.request(
+        method=request.method,
+        url=f"{meiliproxy}/{path}",
+        headers={key: value for (key, value) in request.headers if key != 'Host'},
+        data=request.get_data(),
+        params=request.args,
+        cookies=request.cookies,
+        allow_redirects=False)
+    # Return the response from MeiliSearch
+    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
+    response = Response(resp.content, resp.status_code, headers)
+    return response
+
+@app.route('/videos/<video_id>')
+def video_page(video_id):
+    # Fetch the video data from MongoDB using the provided ID
+    video = collection.find_one({"id": video_id})
+    if not video:
+        return "Video not found", 404
+    # Pass the video data to the template
+    return render_template('video.html', video=video, bdir=bdir)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -183,7 +304,7 @@ def register():
 
 def fetch_user_from_database(username):
     # Connect to your MongoDB client
-    client = MongoClient('mongodb://ytdldb:27017/')
+    client = MongoClient(f'mongodb://{docker_ytdldb}:27017/')
     # Select your database
     db = client['yt-dlp']
     # Select your collection (table)
@@ -800,19 +921,19 @@ def download(url, args, cutout, output_base):
                 width, height = map(int, actual_resolution.split('x'))
                 aspect_ratio = width / height
                 video_info['aspect_ratio'] = aspect_ratio
-                logging.info('Step 14: Attempting setting video_info[] for aspect_ratio searching for vcodec and acodec')
+                logging.info('Step 14: P1: Attempting setting video_info[] for aspect_ratio searching for vcodec and acodec')
             else:
                 video_info['aspect_ratio'] = "unknown"
-                logging.info('Step 14: No aspect ratio found because actual_resolution is not valid')
+                logging.info('Step 14: P2: No aspect ratio found because actual_resolution is not valid')
         else:
             if actual_resolution and 'x' in actual_resolution:
                 width, height = map(int, actual_resolution.split('x'))
                 aspect_ratio = width / height
                 video_info['aspect_ratio'] = aspect_ratio
-                logging.info('Step 14: Attempting setting video_info[] for aspect_ratio with actual_resolution math')
+                logging.info('Step 14: P3: Attempting setting video_info[] for aspect_ratio with actual_resolution math')
             else:
                 video_info['aspect_ratio'] = "unknown"
-                logging.info('Step 14: No aspect ratio found because actual_resolution is not valid')
+                logging.info('Step 14: P4: No aspect ratio found because actual_resolution is not valid')
     print(f"Aspect ratio: {video_info['aspect_ratio']}")
     logging.info('vInfo: aspect ratio1: "%s"', video_info['aspect_ratio'])
 
@@ -836,6 +957,8 @@ def download(url, args, cutout, output_base):
     # Add the video_info data into the mongodb
     collection.insert_one(video_info)
     logging.info('Step 16: Adding video_info[] to collection')
+		
+    process_and_add_to_meilisearch()
 
     #############################################################
     # Step 15 ###################################################
