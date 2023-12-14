@@ -30,6 +30,9 @@
 				<div class="collapse navbar-collapse" id="navcol-5">
 					<ul class="navbar-nav ms-auto">
 						<li class="nav-item">
+							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
+						</li>
+						<li class="nav-item">
 							<a class="nav-link" href="/login" id="login-link">Login</a>
 							<div id="user-info">
 								<span id="username" style="display: none;">
@@ -53,7 +56,7 @@
 			<h1>{{ video.title }}</h1>
 			<p>Uploaded by: {{ video.user }}</p>
 			<p>Duration: {{ video.length }}</p>
-			<p>Video URL: {{ video.video_url }}</p>
+			<p>Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
 			<p>File Size: {{ video.file_size_readable }}</p>
 			<p>mongoDB ID: {{ video._id }}</p>
 			<script>
