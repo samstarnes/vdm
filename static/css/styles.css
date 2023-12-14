@@ -10,4 +10,5 @@ a:hover{color:#96bbd0}
 .thumbnail-wrapper {position: relative;width: 100%;background-repeat: no-repeat;background-size: cover;
 padding-top: 56.25%; /* 16:9 Aspect Ratio */
 background-position: center center; 
-                   }
+}
+.resultsContainer{background:rgb(15,15,15,1);}
