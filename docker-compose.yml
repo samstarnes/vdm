@@ -2,7 +2,7 @@ version: '3'
 services:
   web:
     build: .
-    container_name: ytdl
+    container_name: ${DOCKER_YTDL}
     ports:
       - "56000:5000"
     volumes:
@@ -14,20 +14,20 @@ services:
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
   mongo:
-    container_name: ytdldb
+    container_name: ${DOCKER_YTDLDB}
     image: mongo
     ports:
       - "56001:27017"
     restart: unless-stopped
   redis:
     image: redis
-    container_name: ytdlredis
+    container_name: ${DOCKER_YTDLREDIS}
     ports:
       - "56002:6379"
     restart: unless-stopped
   meilisearch:
     image: getmeili/meilisearch:v1.4
-    container_name: ytdlmeili
+    container_name: ${DOCKER_YTDLMEILI}
     ports:
       - "56003:7700"
     restart: unless-stopped
