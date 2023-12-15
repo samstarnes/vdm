@@ -4,27 +4,19 @@
 
 #### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
 
-## I'm in a rush. This *should* work. Tomorrow is another day to guarantee a solid, seamless install. The search is guaranteed. Sorting and users is not.
-#### The last bit of code I was working relates to MeiliSearch API keys for index.html and automatic key importing
-
 ## Requirements
 
 - docker
-- some light editing
-- cookies.txt file (optional, if you'd like to download behind paywalls)
+- - cookies.txt file (optional, if you'd like to download behind paywalls)
 
 ## Installation
 
-`do note this is not the final installation method and it will be made easier in the future`
+#### 1) (optional) First modify the `cookies.txt` file in netscape format with *your* cookies. 
+- There are tools, addons and extensions to grab these (only required for sites that require a login, otherwise empty file is fine)
+- - this is not necessary but this is something that could be done for things such as Twitter (when it once required a login to download content)
 
-#### 1) (optional) First modify the `cookies.txt` file in netscape format with *your* cookies. There are tools, addons and extensions to grab these (only required for sites that require a login, otherwise empty file is fine)
-- this is not necessary but this is something that could be done for things such as Twitter (when it once required a login to download content)
-
-#### 2) You're going to need a MeiliSearch Public Search API if you want the search to work. If you want, if done locally, and not exposed to the internet, you can use your master MeiliSearch API Key. Otherwise I recommend grabbing the default search API
-- `curl -X GET 'http://localhost:56003/keys?limit=3' -H 'Authorization: Bearer MASTER_API_KEY'`
-- You will find your default search API key early on... `{"results":[{"name":"Default Search API Key","description":"Use it to search from the frontend","key":"the_default_public_key_is_here","uid":"d27ab...`
-
-#### 3) Edit your .env file for your keys
+#### 2) Edit your .env file for your keys
+- if you'd like you can change your container names and ports
 
 #### 4) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
 
