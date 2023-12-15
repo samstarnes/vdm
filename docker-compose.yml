@@ -4,7 +4,7 @@ services:
     build: .
     container_name: ${DOCKER_YTDL}
     ports:
-      - "56000:5000"
+      - "${DOCKER_PORT_YTDL}:5000"
     volumes:
       - .:/app
     depends_on:
@@ -17,19 +17,19 @@ services:
     container_name: ${DOCKER_YTDLDB}
     image: mongo
     ports:
-      - "56001:27017"
+      - "${DOCKER_PORT_YTDLDB}:27017"
     restart: unless-stopped
   redis:
     image: redis
     container_name: ${DOCKER_YTDLREDIS}
     ports:
-      - "56002:6379"
+      - "${DOCKER_PORT_YTDLREDIS}:6379"
     restart: unless-stopped
   meilisearch:
     image: getmeili/meilisearch:v1.4
     container_name: ${DOCKER_YTDLMEILI}
     ports:
-      - "56003:7700"
+      - "${DOCKER_PORT_YTDLMEILI}:7700"
     restart: unless-stopped
     volumes:
       - ./meili_data:/meili_data
