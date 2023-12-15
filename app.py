@@ -34,8 +34,10 @@ from bson.objectid import ObjectId
 from werkzeug.urls import url_encode
 from flask import Flask, request, render_template, session, redirect, url_for, send_from_directory, Response, json, g, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
-# import concurrent.futures
-# from threading import Timer
+
+# Lots of configuration, touch nothing here
+# Everything below can be modifed within the .env file
+# Start of .env
 load_dotenv()
 meili_master_key = os.getenv('MEILI_MASTER_KEY')
 secret_key = os.getenv('SECRET_KEY')
@@ -43,10 +45,16 @@ docker_ytdl = os.getenv('DOCKER_YTDL')
 docker_ytdldb = os.getenv('DOCKER_YTDLDB')
 docker_ytdlmeili = os.getenv('DOCKER_YTDLMEILI')
 docker_ytdlredis = os.getenv('DOCKER_YTDLREDIS')
-meili_host_url = os.getenv('MEILI_HOST_URL', 'http://localhost:7700')
+docker_port_ytdl = os.getenv('DOCKER_PORT_YTDL')
+docker_port_ytdldb = os.getenv('DOCKER_PORT_YTDLDB')
+docker_port_ytdlredis = os.getenv('DOCKER_PORT_YTDLREDIS')
+docker_port_ytdlmeili = os.getenv('DOCKER_PORT_YTDLMEILI')
+meilisearch_url = f'http://meilisearch:7700'
+# End of .env
 app = Flask(__name__, static_folder='static')
 r = redis.Redis(host=f'{docker_ytdlredis}', port=6379, db=0)  # adjust these parameters to your Redis configuration
 app.register_blueprint(sse, url_prefix='/stream')
+app.config["REDIS_URL"] = "redis://redis:6379"
 # Set system default path to /app
 os.environ['PATH'] += os.pathsep + '/app'
 # Set up logging
@@ -96,7 +104,7 @@ collection = db['downloads']
 # Create a new collection for the global pool
 global_pool = db['global_pool']
 # Create meilisearch connection
-meili_client = Client(f'http://{docker_ytdlmeili}:7700', meili_master_key)  ################################################################
+meili_client = Client(f'http://{docker_ytdlmeili}:{docker_port_ytdlmeili}', meili_master_key)  ################################################################
 # meili_url for reverse proxy
 meiliproxy = f'http://{docker_ytdlmeili}:7700'
 # Create a directory for the executables if it doesn't exist
@@ -137,7 +145,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 def get_meilisearch_public_key():
-    url = 'http://localhost:56003/keys'
+    url = f'{meilisearch_url}/keys'
     headers = {'Authorization': f'Bearer {meili_master_key}'}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -1085,7 +1093,8 @@ def home():
         video['tmbfp'] = unquote(video['tmbfp'])
     # Pass the video data to the template
     directory = getattr(g, 'directory', None)
-    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory, meili_host_url=meili_host_url, search_api_key=search_api_key)
+    search_api_key = get_meilisearch_public_key()
+    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory, meilisearch_url=meilisearch_url, search_api_key=search_api_key)
 
 if __name__ == '__main__':
     app.debug = False
