@@ -5,7 +5,7 @@
 #### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
 
 #### Main is currently up to date and the latest as found on my instance of [VDM](https://vdm.0x0.la).
-> Ideally, don't use mine as I don't have *that* much HD space and I'll end up deleting your [unwanted] data [most likely].
+> Ideally, don't use mine as I don't have *that* much HD space and I'll end up deleting your [unwanted] data.
 
 ## Requirements
 
