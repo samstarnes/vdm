@@ -17,8 +17,9 @@
 
 #### 2) Edit your .env file for your keys
 - if you'd like you can change your container names and ports
-- - for Linux you can run `openssl rand -hex 32`
-- - for Windows in PowerShell you can run 
+- - to generate keys (randomly):
+- - - for Linux you can run: `openssl rand -hex 32`
+- - - for Windows in PowerShell, see below:
 ```
 $randomKeyBytes = New-Object byte[] 16
 [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($randomKeyBytes)
@@ -26,7 +27,7 @@ $randomKeyHex = -join ($randomKeyBytes | ForEach-Object { $_.ToString("X2") })
 Write-Host $randomKeyHex
 ```
 
-#### 4) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
+#### 3) `docker-compose up --build` or for a detached container `docker-compose up -d --build`
 
 ## Appearance (WIP - will change over time)
 
