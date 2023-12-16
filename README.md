@@ -14,31 +14,40 @@
 
 ## Installation
 
-#### 1) CD to your wanted directory and clone: `git clone https://github.com/samstarnes/vdm.git` 
+#### 1) CD to your target install directory and clone: `git clone https://github.com/samstarnes/vdm.git` 
+> Or install to current directory after CDing to target install directory `git clone https://github.com/samstarnes/vdm.git .`
 
 #### 2) (optional) Modify the `cookies.txt` file in netscape format with *your* cookies. 
-> There are tools, addons and extensions to grab these (only required for sites that require a login, otherwise empty file is fine)
-> > this is not necessary but this is something that could be done for things such as Twitter (when it once required a login to download content)
+> Recommended method: `yt-dlp --cookies-from-browser chrome --cookies cookies.txt`
+
+> Alternative method: There are tools, addons and [extensions](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) to grab these.
+> > This is only required for sites that require a login otherwise do not change the file.
+> > > Sites such as Twitter (when it once required a login to download content) or videos locked behind age verifications or subscriptions will require this (but yt-dlp might fail, ymmv). 
+> > > > Note that the cookies file must be in Mozilla/Netscape format and the first line of the cookies file must be either:
+
+> > > > `# HTTP Cookie File` or `# Netscape HTTP Cookie File`. 
+
+> > > > Make sure you have correct newline format in the cookies file and convert newlines if necessary to correspond with your OS, namely `CRLF` (`\r\n`) for Windows and `LF` (`\n`) for Unix and Unix-like systems (Linux, macOS, etc.). `HTTP Error 400: Bad Request` when using `--cookies` is a good sign of invalid newline format.
 
 #### 3) Edit your .env file for your keys
-> if you'd like you can change your container names and ports
-> > to generate keys (randomly):
+> If you'd like you can change your container names and external ports.
+> > To generate keys (random 64 character):
 
-> > > for Linux you can run: 
+> > > For Linux you can run: 
 ```
 openssl rand -hex 32
 ```
 
-> > > for Windows in PowerShell, see below:
+> > > For Windows in PowerShell, see below:
 ```
-$randomKeyBytes = New-Object byte[] 16
+$randomKeyBytes = New-Object byte[] 32
 [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($randomKeyBytes)
 $randomKeyHex = -join ($randomKeyBytes | ForEach-Object { $_.ToString("X2") })
 Write-Host $randomKeyHex
 ```
 
 #### 4) Build and run docker container: `docker-compose up --build` 
-- or for a detached container `docker-compose up -d --build`
+- Or for a detached container `docker-compose up -d --build`
 
 ## Appearance (WIP - will change over time)
 
