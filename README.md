@@ -2,7 +2,7 @@
 
 ### VDM is a frontend for youtube-dl. It's coded using python with mongoDB as the backend database.
 
-# You are looking at the beta version. This will either be broken in some way or have undeveloped features. This is not the recommended version to use but will have the fastest [working] updates 
+# You are looking at the beta version. This will either be broken in some way or have undeveloped features. This is not the recommended version to use. Main is currently more up to date 23.12.15
 
 #### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
 
