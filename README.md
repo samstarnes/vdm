@@ -51,7 +51,8 @@ Write-Host $randomKeyHex
 
 ## Appearance (WIP - will change over time)
 
-![FireShot Webpage Capture 020 - 'VDM_Video Download Manager' - 10 0 0 4](https://github.com/samstarnes/vdm/assets/19420604/b54b9fe4-b0cf-460f-82a6-7a15c12d1842)
+![Full Page](https://0x0.la/i/2023/12/17-12.38-1qcx.png)
+![Embeds for videos](https://0x0.la/i/2023/12/17-12.36-btrz.png)
 
 
 ## Features not included yet
