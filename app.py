@@ -274,12 +274,16 @@ def proxy_to_meili(path):
     response = Response(resp.content, resp.status_code, headers)
     return response
 
+# Delivers /videos/ID video page for a single video (player)
 @app.route('/videos/<video_id>')
 def video_page(video_id):
     # Fetch the video data from MongoDB using the provided ID
     video = collection.find_one({"id": video_id})
     if not video:
         return "Video not found", 404
+    # Fix data to pass to videos.html for <meta> tags
+    video['filename'] = video['filename'].replace('/appdata/', 'data/')
+    video['tmbfp'] = video['tmbfp'].replace('/data/data/public/', '/data/public/')
     # Pass the video data to the template
     return render_template('video.html', video=video, bdir=bdir)
 
@@ -582,6 +586,7 @@ def stream():
     #############################################################
     ###################### Route /videos ########################
 
+# Delivers /videos for the pages
 @app.route('/videos')
 def videos():
     p = int(request.args.get('p', 1))
@@ -589,6 +594,7 @@ def videos():
     offset = (p - 1) * ipp
     videos = collection.find().skip(offset).limit(ipp)
     total_videos = collection.count_documents({})
+		
     return render_template('videos.html', videos=videos, p=p, ipp=ipp, total_videos=total_videos)
 
     #############################################################
