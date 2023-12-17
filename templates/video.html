@@ -11,6 +11,19 @@
 		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:site_name" content="VDM" />
+		<meta property="og:title" content="{{ video.title }}" />
+		<meta property="og:description" content="{{ video.title }}" />
+		<meta property="og:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}" />
+		<meta property="og:url" content="{{ url_for('video_page', video_id=video.id) }}" />
+		<meta property="og:type" content="video.other" />
+		<meta property="og:video" content="{{ url_for('serve_data', filename=video.filename) }}" />
+		<meta name="twitter:card" content="{{ url_for('serve_data', filename=video.tmbfp) }}">
+		<meta name="twitter:title" content="{{ video.title }}">
+		<meta name="twitter:description" content="{{ video.title }}">
+		<meta name="twitter:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}">
 	</head>
 	<body style="background: #171717;overflow-x: hidden;">
 		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
@@ -33,19 +46,19 @@
 							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="/login" id="login-link">Login</a>
+							<a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
 							<div id="user-info">
 								<span id="username" style="display: none;">
 									<a href="#" id="username-link"></a>
 										<div id="user-menu" style="display: none;">
 											<a href="#">Settings</a>
-											<a href="/logout" id="logout-link">Logout</a>
+											<a href="/logout" id="logout-link"><s>Logout</s></a>
 										</div>
 								</span>
 							</div>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="/register" id="login-link">Register</a>
+							<a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
 						</li>
 					</ul>
 				</div>
