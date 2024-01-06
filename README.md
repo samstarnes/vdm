@@ -71,6 +71,7 @@ Write-Host $randomKeyHex
 - Download playlists | requested by /u/barry_flash-
 - Filter function
 - Have the output & cutout work for only a single URL
+- Move installation location (files, directories, requires updates to mongodb)
 - Multi-user login & registration & login/registration page
 - Repair mongoDB with JSON files as backup (just had to do this, don't updateMany with no sleep)
 - Search is IN but I've got some ideas to tweak it and make it better
