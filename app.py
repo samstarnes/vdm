@@ -50,6 +50,7 @@ docker_port_ytdldb = os.getenv('DOCKER_PORT_YTDLDB')
 docker_port_ytdlredis = os.getenv('DOCKER_PORT_YTDLREDIS')
 docker_port_ytdlmeili = os.getenv('DOCKER_PORT_YTDLMEILI')
 meilisearch_url = f'http://meilisearch:7700'
+pagedisplaylimit = os.getenv('pagenumdisplaylimit')
 # End of .env
 app = Flask(__name__, static_folder='static')
 r = redis.Redis(host=f'{docker_ytdlredis}', port=6379, db=0)  # adjust these parameters to your Redis configuration
@@ -591,11 +592,12 @@ def stream():
 def videos():
     p = int(request.args.get('p', 1))
     ipp = int(request.args.get('ipp', 20))
+    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10 # Configurable number of page links to display or default to 10
     offset = (p - 1) * ipp
     videos = collection.find().skip(offset).limit(ipp)
     total_videos = collection.count_documents({})
-		
-    return render_template('videos.html', videos=videos, p=p, ipp=ipp, total_videos=total_videos)
+    total_pages = (total_videos + ipp - 1) // ipp
+    return render_template('videos.html', videos=videos, p=p, ipp=ipp, total_videos=total_videos, total_pages=total_pages, page_display_limit=page_display_limit)
 
     #############################################################
     ###################### Parse Progress #######################
@@ -1084,6 +1086,7 @@ def home():
     # Get the current page number and number of items per page from the query parameters
     p = request.args.get('p', default=1, type=int)
     ipp = request.args.get('ipp', default=20, type=int)
+    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10 # Configurable number of page links to display or default to 10
     offset = (p - 1) * ipp
     # Calculate the total number of videos
     total_videos = collection.count_documents({}) 
@@ -1100,7 +1103,7 @@ def home():
     # Pass the video data to the template
     directory = getattr(g, 'directory', None)
     search_api_key = get_meilisearch_public_key()
-    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, bdir=bdir, directory=directory, meilisearch_url=meilisearch_url, search_api_key=search_api_key)
+    return render_template('index.html', videos=videos, p=p, total_pages=total_pages, ipp=ipp, page_display_limit=page_display_limit, bdir=bdir, directory=directory, meilisearch_url=meilisearch_url, search_api_key=search_api_key)
 
 if __name__ == '__main__':
     app.debug = False
