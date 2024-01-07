@@ -51,7 +51,7 @@ Write-Host $randomKeyHex
 
 ## Appearance (WIP - will change over time)
 
-![Full Page](https://0x0.la/i/2024/01/07-03.06-6r5o.png)
+![Full Page](https://s.0x0.la/u7l7XM)
 ![Embeds for videos](https://0x0.la/i/2023/12/17-12.36-btrz.png)
 
 
