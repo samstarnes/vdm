@@ -83,13 +83,11 @@ Write-Host $randomKeyHex
   - Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link will fail to complete.
 - Low Priority:
   - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
-  - Changing the page 'p' in the URL directly to a negative number causes an internal server error.
 - Cosmetic Issues:
   - Data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return.
   - Progress begins with the download but then merges the audio and video so it resets the progress bar to 0%, goes back to 100%.
   - Sometimes the progress bugs out a little and stops updating (looking into this).
   - SSE seems to unexpectedly close after some time (need to determine if it can be reopened).
-  - Changing the page 'p' in the URL directly to a number greater than the total number of pages causes a cosmetic issue and (obviously) no videos are seen below. No additional error besides the appearance.
 
 ### Possible Issues
 - N/A
