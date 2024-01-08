@@ -592,11 +592,18 @@ def stream():
 def videos():
     p = int(request.args.get('p', 1))
     ipp = int(request.args.get('ipp', 20))
-    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10 # Configurable number of page links to display or default to 10
-    offset = (p - 1) * ipp
-    videos = collection.find().skip(offset).limit(ipp)
+    # Configurable number of page links to display or default to 10
+    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10
     total_videos = collection.count_documents({})
     total_pages = (total_videos + ipp - 1) // ipp
+    # Redirect to page 1 if the page number is less than 1
+    if p < 1:
+        return redirect(url_for('index', p=1, ipp=ipp))
+    # Redirect to the last page if the page number is greater than total_pages
+    if p > total_pages:
+        return redirect(url_for('index', p=total_pages, ipp=ipp))
+    offset = (p - 1) * ipp
+    videos = collection.find().skip(offset).limit(ipp)
     return render_template('videos.html', videos=videos, p=p, ipp=ipp, total_videos=total_videos, total_pages=total_pages, page_display_limit=page_display_limit)
 
     #############################################################
@@ -1081,19 +1088,25 @@ def serve_data(filename):
     filename = filename.replace('data/', '', 1)
     return send_from_directory('data', filename)
 
-@app.route('/')
+@app.route('/', endpoint='index')
 def home():
     # Get the current page number and number of items per page from the query parameters
     p = request.args.get('p', default=1, type=int)
     ipp = request.args.get('ipp', default=20, type=int)
-    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10 # Configurable number of page links to display or default to 10
-    offset = (p - 1) * ipp
+    # Configurable number of page links to display or default to 10
+    page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10
     # Calculate the total number of videos
     total_videos = collection.count_documents({}) 
     # Calculate the total number of pages
     total_pages = (total_videos + ipp - 1) // ipp
+    # Redirect to page 1 if the page number is less than 1
+    if p < 1:
+        return redirect(url_for('index', p=1, ipp=ipp))
+    # Redirect to the last page if the page number is greater than total_pages
+    if p > total_pages:
+        return redirect(url_for('index', p=total_pages, ipp=ipp))
+    offset = (p - 1) * ipp
     # Query MongoDB to get the video data
-    # videos = list(collection.find())
     videos = list(collection.find({}).skip(offset).limit(ipp))
     # Modify the tmbfp attribute by removing "data/" prefix and replace special characters
     for video in videos:
