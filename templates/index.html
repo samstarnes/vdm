@@ -156,9 +156,9 @@
         <!-- SkipPrevious and Previous page links -->
         {% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
         {% if p > 1 %}
-					<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First</a>
-          <a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">Backwards ⬅️</a>
-          <a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
+					<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
+          <a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
+          <a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a>
         {% endif %}
         <!-- Ellipsis before page numbers if needed -->
         {% if p > page_display_limit %}
@@ -183,8 +183,8 @@
         <!-- Next and SkipNext page links -->
         {% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
         {% if p < total_pages %}
-          <a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
-          <a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️</a>
+          <a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a>
+          <a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
 					<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
         {% endif %}
 			</div>
@@ -242,9 +242,9 @@
 					<!-- SkipPrevious and Previous page links -->
 					{% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
 					{% if p > 1 %}
-						<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First</a>
-						<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">Backwards ⬅️</a>
-						<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
+						<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
+						<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
+						<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a>
 					{% endif %}
 					<!-- Ellipsis before page numbers if needed -->
 					{% if p > page_display_limit %}
@@ -269,8 +269,8 @@
 					<!-- Next and SkipNext page links -->
 					{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
 					{% if p < total_pages %}
-						<a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
-						<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️</a>
+						<a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a>
+						<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
 						<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
 					{% endif %}
 				</div>
