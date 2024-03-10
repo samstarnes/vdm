@@ -4,13 +4,13 @@
 
 #### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
 
-#### Main is currently up to date and the latest as found on my instance of [VDM](https://vdm.0x0.la).
+#### Main is typically up to date and the latest as found on my instance of [VDM](https://vdm.0x0.la) (unless some *big* changes are coming).
 > Ideally, don't use mine as I don't have *that* much HD space and I'll end up deleting your [unwanted] data.
 
 ## Requirements
 
 - docker
-- - cookies.txt file (optional)
+- - cookies.txt file (optional, may become a requirement in the future)
 
 ## Installation
 
@@ -56,26 +56,26 @@ Write-Host $randomKeyHex
 
 
 ## Features not included yet
-- Admin page
+- Admin page (*coming soon!*)
 - Calender filter for searching between dates
 - Configurable:
-  - Cookie file
+  - Cookie file (*coming soon!*)
   - Items ordered by duration, size, download date (ID), posted date  
-  - Option of JSON saving (metadata is managed by mongoDB and I'm making that a requirement, for now)
-  - Public item automatic deletion (finished but disabledm, needs light work)
+  - Option of JSON saving (metadata is managed by mongoDB and I'm making that a requirement, for now) (*coming soon!*)
+  - Public item automatic deletion (finished but disabled, needs light work)
   - Normal vs reverse order
   - Other database options (like postgreSQL and RethinkDB, perhaps others)
-  - Public vs private view (and mixed of both) for videos
-  - Themes
+  - Public vs private view (and mixed of both) for videos (*coming soon-ish!*)
+  - Themes (*coming soon!*)
 - Download comments | requested by /u/ECrispy
 - Download playlists | requested by /u/barry_flash-
 - Filter function
 - Have the output & cutout work for only a single URL
-- Move installation location (files, directories, requires updates to mongodb)
-- Multi-user login & registration & login/registration page
-- Repair mongoDB with JSON files as backup (just had to do this, don't updateMany with no sleep)
-- Search is IN but I've got some ideas to tweak it and make it better
-- Video player page (it looks terrible right now and honestly requires chunked videos with HLS to function properly)
+- Move installation location (files, directories, requires updates to mongodb) (*coming soon!*)
+- Multi-user login & registration & login/registration page (*coming soon-ish!*)
+- Repair mongoDB with JSON files as backup (just had to do this, don't updateMany with no sleep) (*coming soon-ish!*)
+- Search is IN but I've got some ideas to tweak it and make it better (tags)
+- Video player page (it looks terrible right now and honestly requires chunked videos with HLS to function properly) (*coming soon!*)
 
 ### Known Issues
 - High Priority
