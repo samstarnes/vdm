@@ -111,7 +111,7 @@ meiliproxy = f'http://{docker_ytdlmeili}:7700'
 # Create a directory for the executables if it doesn't exist
 os.makedirs('/app', exist_ok=True)
 # Download yt-dlp
-urllib.request.urlretrieve('https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp', '/app/yt-dlp')
+urllib.request.urlretrieve('https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp', '/app/yt-dlp')
 logging.info('Retrieving YT-DLP')
 # Make yt-dlp executable
 os.chmod('/app/yt-dlp', 0o755)
