@@ -70,18 +70,26 @@ Write-Host $randomKeyHex
 - Download comments | requested by /u/ECrispy
 - Download playlists | requested by /u/barry_flash-
 - Filter function
-- Have the output & cutout work for only a single URL
-- Move installation location (files, directories, requires updates to mongodb) (*coming soon!*)
+- Have the output & cutout work for only a single URL 
+  - [*I might just remove this altogether and provide an alternative method*]
+- Move installation location (files, directories, requires updates to mongodb) (*coming soon!*) 
+  - [***this comes next as additional volumes available for storage is necessary now***]
 - Multi-user login & registration & login/registration page (*coming soon-ish!*)
-- Repair mongoDB with JSON files as backup (just had to do this, don't updateMany with no sleep) (*coming soon-ish!*)
-- Search is IN but I've got some ideas to tweak it and make it better (tags)
+- Repair mongoDB with JSON files as backup (*coming soon-ish!*)
+  - (*just had to do this, don't updateMany with no sleep*)
+- Search is IN but I've got some ideas to tweak it and make it better (*tags*)
 - Video player page (it looks terrible right now and honestly requires chunked videos with HLS to function properly) (*coming soon!*)
+  - [***FINISHED*** however this is doubling the amount of data being saved hence the requirement for additional volumes and automatic deletion of original video copies. A command to convert and download will be made available.]
+  - [*This is also why I have not updated in quite some time.*]
+- Volume management system to add additional hard drives for extra storage
+  - [*This will include round-robin and high-watermarking as methods of saving.*]
 
 ### Known Issues
 - High Priority
-  - Currently using the cutout time or renaming of a file is not recommended as I've done zero testing using it nor will it work with multiple URLs. I **do not** recommend using it at all.  
   - Some videos will fail to download if presented with multiple videos on a page. Twitter for example will provide a grid of multiple videos and/or pictures included and the link will fail to complete.
+    - [*This works now, I think? But you will have to manually select each video of the grid to download them all or else the first one is downloaded.*]
 - Low Priority:
+  - Currently using the cutout time or renaming of a file is not recommended as I've done zero testing using it nor will it work with multiple URLs. I **do not** recommend using it at all.
   - Leaving a newline `\n` in the text box with an array of URLs will cause a failure on the empty newline.
 - Cosmetic Issues:
   - Data stream from yt-dlp when returning the ETA rapidly changes in time, looking into a way of making a more accurate ETA return.
@@ -92,5 +100,5 @@ Write-Host $randomKeyHex
 ### Possible Issues
 - N/A
 
-#### Personal Note
-I've already used this for over 1000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another. I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
+### Personal Note
+I've already used this for over 2000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
