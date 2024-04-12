@@ -366,7 +366,7 @@ def update_statistics(url):
     #############################################################
     ##################### Sanitize Filename #####################
 
-def sanitize_filename(filename, max_length=200):
+def sanitize_filename(filename, max_length=180):
     invalid_chars = '\“\”!*()[].\'%&@$/<>:"/\\|?*#;^%~`,'
     for char in invalid_chars:
         filename = filename.replace(char, '_') # remove illegal characters
