@@ -1,114 +1,126 @@
 <!DOCTYPE html>
 <html lang="en" style="background: #171717;">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-		<title>VDM/Video Download Manager</title>
-		<script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-		<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta property="og:locale" content="en_US" />
-		<meta property="og:site_name" content="VDM - Video Download Manager" />
-		<meta property="og:title" content="{{ video.title }}" />
-		<meta property="og:description" content="{{ video.title }}" />
-		<meta property="og:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}" />
-		<meta property="og:url" content="{{ url_for('video_page', video_id=video.id) }}" />
-		<meta property="og:type" content="video.other" />
-		<meta property="og:video" content="{{ url_for('serve_data', filename=video.filename) }}" />
-		<meta name="twitter:card" content="{{ url_for('serve_data', filename=video.tmbfp) }}">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
+    <meta name="description" content="{{ video.title }}"/>
+    <title>VDM/Video Download Manager</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+		<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="VDM - Video Download Manager" />
+    <meta property="og:title" content="{{ video.movie }}" />
+    <meta property="video:actor" content="{{ video.user }}" />
+    <meta property="video:tag" content="{{ video.title }}" />
+    <meta property="og:description" content="{{ video.title }}
+                                            (@{{ video.user }})" />
+    <meta property="og:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}" />
+    <meta property="og:url" content="{{ url_for('video_page', video_id=video.id) }}" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:video" content="{{ url_for('serve_data', filename=video.filename) }}" />
+    <!-- <meta name="twitter:card" content="{{ url_for('serve_data', filename=video.tmbfp) }}"> -->
+    <meta name="twitter:card" content="player">
+		<meta name="twitter:site" content="@{{ video.user }}">
 		<meta name="twitter:title" content="{{ video.title }}">
-		<meta name="twitter:description" content="{{ video.title }}">
-		<meta name="twitter:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}">
-	</head>
-	<body style="background: #171717;overflow-x: hidden;">
-		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
-			<div class="container">
-			<a class="navbar-brand d-flex align-items-center" href="/">
-				<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
-					<i class="material-icons">video_library</i>
-				</span>
-				<span style="color: rgb(255,255,255);font-size: 25px;">
-					<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
-				</span>
-			</a>
-			<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
-				<span class="visually-hidden">Toggle navigation</span>
-				<span class="navbar-toggler-icon"></span>
-			</button>
-				<div class="collapse navbar-collapse" id="navcol-5">
-					<ul class="navbar-nav ms-auto">
-						<li class="nav-item">
-							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
-							<div id="user-info">
-								<span id="username" style="display: none;">
-									<a href="#" id="username-link"></a>
-										<div id="user-menu" style="display: none;">
-											<a href="#">Settings</a>
-											<a href="/logout" id="logout-link"><s>Logout</s></a>
-										</div>
-								</span>
-							</div>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
-						</li>
-					</ul>
-				</div>
-			</div>
-		</nav>
-		<div class="container" style="color: rgb(255,255,255);">
-			<div id="videoContainer" data-filename="{{ url_for('serve_data', filename=video.filename) }}"></div>
-			<h1>{{ video.title }}</h1>
-			<p>Uploaded by: {{ video.user }}</p>
-			<p>Duration: {{ video.length }}</p>
-			<p>Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
-			<p>File Size: {{ video.file_size_readable }}</p>
-			<p>mongoDB ID: {{ video._id }}</p>
-			<script>
-				var bdir = "{{ bdir }}"; // passing base directory
-				document.addEventListener('DOMContentLoaded', function() {
-					var videoContainer = document.getElementById('videoContainer');
-					var fullPath = videoContainer.getAttribute('data-filename').replace(bdir, '');
-					var videoPath = fullPath.replace('/data/', '/');
-					// Create video and source elements
-					var videoElement = document.createElement('video');
-					videoElement.setAttribute('width', '100%');
-					videoElement.setAttribute('height', '100%');
-					videoElement.setAttribute('controls', '');
-					videoElement.setAttribute('preload', '');
-					var sourceElement = document.createElement('source');
-					sourceElement.setAttribute('src', videoPath);
-					// Determine MIME type based on file extension
-					var fileExtension = videoPath.split('.').pop();
-					var mimeType;
-					switch (fileExtension) {
-						case 'mp4':
-							mimeType = 'video/mp4';
-							break;
-						case 'webm':
-							mimeType = 'video/webm';
-							break;
-						default:
-							mimeType = 'video/mp4'; // Default MIME type
-					}
-					sourceElement.setAttribute('type', mimeType);
-					// Append source to video and video to the container
-					videoElement.appendChild(sourceElement);
-					videoContainer.appendChild(videoElement);
-					// Add event listener for canplaythrough event
-					videoElement.addEventListener('canplaythrough', function() {
-            videoElement.play(); // Play the video automatically
-					});
-				});
-			</script>
-		</div>
-	</body>
+    <meta name="twitter:description" content="{{ video.title }}">
+    <meta name="twitter:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}">
+    <meta name="twitter:player" content="{{ url_for('player', filename=video.filename) }}">
+    <meta name="twitter:player:stream" content="{{ url_for('serve_data', filename=video.filename) }}" />
+    <meta name="twitter:player:stream:content_type" content="{{ content_type }}">
+		<meta name="twitter:player:width" content="1280" />
+		<meta name="twitter:player:height" content="720" />
+  </head>
+  <body style="background: #171717;overflow-x: hidden;">
+    <nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
+      <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+        <span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
+          <i class="material-icons">video_library</i>
+        </span>
+        <span style="color: rgb(255,255,255);font-size: 25px;">
+          <strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
+        </span>
+      </a>
+      <button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
+        <span class="visually-hidden">Toggle navigation</span>
+        <span class="navbar-toggler-icon"></span>
+      </button>
+        <div class="collapse navbar-collapse" id="navcol-5">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
+              <div id="user-info">
+                <span id="username" style="display: none;">
+                  <a href="#" id="username-link"></a>
+                    <div id="user-menu" style="display: none;">
+                      <a href="#">Settings</a>
+                      <a href="/logout" id="logout-link"><s>Logout</s></a>
+                    </div>
+                </span>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container" style="color: rgb(255,255,255);">
+      <div id="videoContainer" data-hls="{{ url_for('serve_hls', video_id=video.id, filename=video.id + '.m3u8') }}"></div>
+      <h1>{{ video.title }}</h1>
+      <p>Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
+      <p>Index: {{ video.index }}</p>
+			<p>Video ID: {{ video.id }}</p>
+      <p>Uploaded by: {{ video.user }}</p>
+      <p>Duration: {{ video.length }}</p>
+			<p>Date Posted: {{ video.date_posted }}</p>
+			<p>Archive Date: {{ video.archive_date }}</p>
+			<p>File size (Bytes): {{ video.file_size_bytes }}</p>
+			<p>File size (Readable): {{ video.file_size_readable }}</p>
+			<p>Resolution: {{ video.resolution }}</p>
+			<p>Aspect Ratio: {{ video.aspect_ratio }}</p>
+			<p>Filename: {{ video.filename }}</p>
+			<p>JSON File: {{ video.json_file }}</p>
+			<p>Thumbnail: {{ video.thumbnail }}</p>
+      <p>Thumbnail FP: {{ video.tmbfp }}</p>
+      <p>mongoDB ID: {{ video._id }}</p>
+      <p>Download Link: {{ video.filename }}</p>
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          var videoContainer = document.getElementById('videoContainer');
+          var hlsPath = videoContainer.getAttribute('data-hls');
+          var videoElement = document.createElement('video');
+          videoElement.setAttribute('width', '100%');
+          videoElement.setAttribute('height', '100%');
+          videoElement.setAttribute('controls', '');
+          videoElement.setAttribute('preload', '');
+					videoElement.setAttribute('poster', 'static/poster.png');
+          if (Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource(hlsPath);
+            hls.attachMedia(videoElement);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+              videoElement.play();
+            });
+          } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+            videoElement.src = hlsPath;
+            videoElement.addEventListener('canplay', function() {
+              videoElement.play();
+            });
+          }
+          videoContainer.appendChild(videoElement);
+        });
+      </script>
+    </div>
+  </body>
 </html>
