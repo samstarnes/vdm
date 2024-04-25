@@ -104,7 +104,7 @@ Write-Host $randomKeyHex
 I've already used this for over 2000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
 
 ## Experimental branch bugs
-- tmbfp *should be* giving data/public/thumbnails/filename.extension
+- tmbfp *should be* giving data/public/thumbnails/filename.extension **(This is for the thumbnails. Right now they're all 404ing)**
   - tmbfp is giving: /data/data/public/thumbnails/filename.extension
   - or it is giving: data/data/public/thumbnails/filename.extension
 - downloading the json with yt-dlp will give random errors from time to time. The output is not guaranteed
@@ -137,3 +137,4 @@ I've already used this for over 2000+ videos and it's worked so far. There may b
       - WARNING: [TikTok] Expecting value in '': line 1 column 1 (char 0). Retrying... (attempt 2 of 4)
       - WARNING: [TikTok] Expecting value in '': line 1 column 1 (char 0). Retrying... (attempt 3 of 4)
       - WARNING: [TikTok] 7269236324131966238: Failed to parse JSON (caused by JSONDecodeError("Expecting value in '': line 1 column 1 (char 0)")); trying with webpage
+- I need to get the volume storage manager working so files (json, thumbnails, hls chunks) will be MOVED to the other volumes and the database will be updated with the new locations after a successful move (then delete the original video)
