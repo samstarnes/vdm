@@ -104,9 +104,10 @@ Write-Host $randomKeyHex
 I've already used this for over 2000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
 
 ## Experimental branch bugs
-- tmbfp *should be* giving data/public/thumbnails/filename.extension **(This is for the thumbnails. Right now they're all 404ing)**
-  - tmbfp is giving: /data/data/public/thumbnails/filename.extension
-  - or it is giving: data/data/public/thumbnails/filename.extension
+- ~~tmbfp *should be* giving data/public/thumbnails/filename.extension **(This is for the thumbnails. Right now they're all 404ing)**~~
+  - ~~tmbfp is giving: /data/data/public/thumbnails/filename.extension~~
+  - ~~or it is giving: data/data/public/thumbnails/filename.extension~~
+- attempting to add most of these errors to an ignore list to continue the json saving
 - downloading the json with yt-dlp will give random errors from time to time. The output is not guaranteed
   - some options are:
     - WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "GCWqx6mCd04")
