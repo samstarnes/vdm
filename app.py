@@ -231,7 +231,7 @@ def process_and_add_to_meilisearch():
     for video_info in unprocessed_items:
         try:
             logging.info(f"Current video_info data: {video_info}")
-            video_index = video_info.get('index')
+            video_index = video_info.get('index') # still broken on ln268
             video_id = video_info.get('id')
             if video_index is not None:
                 logging.info(f"process_and_add_to_meilisearch: Video Index: {video_index}")
@@ -1323,7 +1323,7 @@ def download(url, args, cutout, output_base):
                             "Unable to download API page",
                             "Falling back on generic information extractor"
                         ]
-                        if any(ignore_list in poutput for ignore_string in ignore_list):
+                        if any(ignore_string in poutput for ignore_string in ignore_list):
                             continue # skip this iteration and don't process this line
                         # Save JSON output to a file (2/3 files)
                         logging.info(f'Step 07: Writing output to JSON - 2/3 files (json)')
