@@ -7,6 +7,9 @@ services:
       - "${DOCKER_PORT_YTDL}:5000"
     volumes:
       - .:/app
+      - /mnt/Yellow/docker/anomaly-ytdlp:/storage/yellow
+      - /mnt/Purple/docker/anomaly-ytdlp:/storage/purple
+      - /mnt/E/docker/anomaly-ytdlp:/storage/white
     depends_on:
       - mongo
       - redis
