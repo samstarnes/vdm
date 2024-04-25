@@ -475,11 +475,18 @@ def video_page(video_id):
         logging.info(f"HLS: 19")
         return "Video not found", 404
     # Fix data to pass to videos.html for <meta> tags
+    printline(f"route video_page before: {video['filename']}")
+    printline(f"route video_page before: {video['tmbfp']}")
+    logging.info(f"route video_page P1: {video['filename']}")
+    logging.info(f"route video_page P2: {video['tmbfp']}")
     video['filename'] = video['filename'].replace(docker_mainpath, '/app/')
-    # video['filename'] = video['filename'].replace('/app/data/', 'data/')
-    # video['tmbfp'] = video['tmbfp'].replace('/data/data/public/', '/data/public/')
-    printline(f"route video_page: {video['filename']}")
-    printline(f"route video_page: {video['tmbfp']}")
+    video['filename'] = video['filename'].replace('/appdata/public/', '/app/data/public/')
+    video['filename'] = video['filename'].replace('/app/data/', 'data/')
+    video['tmbfp'] = video['tmbfp'].replace('/data/data/public/', '/data/public/')
+    printline(f"route video_page after: {video['filename']}")
+    printline(f"route video_page after: {video['tmbfp']}")
+    logging.info(f"route video_page P3: {video['filename']}")
+    logging.info(f"route video_page P4: {video['tmbfp']}")
     # Construct the HLS playlist path
     hls_playlist_path = os.path.join(HLS_FILES_DIR, video_id, f'{video_id}.m3u8')
     logging.info('hls_playlist_path: %s', hls_playlist_path)
@@ -1308,6 +1315,16 @@ def download(url, args, cutout, output_base):
                     if poutput == '' and jsonres.poll() is not None:
                         break
                     if poutput:
+                        ignore_list = [
+                            "Skipping player responses from android clients",
+                            "Post-Processor arguments given without specifying name",
+                            "YouTube said: ERROR - Precondition check failed",
+                            "HTTP Error 400: Bad Request",
+                            "Unable to download API page",
+                            "Falling back on generic information extractor"
+                        ]
+                        if any(ignore_list in poutput for ignore_string in ignore_list):
+                            continue # skip this iteration and don't process this line
                         # Save JSON output to a file (2/3 files)
                         logging.info(f'Step 07: Writing output to JSON - 2/3 files (json)')
                         # logging.info(f'Step 07: poutput = {poutput}')
@@ -1619,9 +1636,9 @@ def home():
     videos = list(collection.find({}).skip(offset).limit(ipp))
     # Modify the tmbfp attribute by removing "data/" prefix and replace special characters
     for video in videos:
-        video['tmbfp'] = video['tmbfp'].replace("/data/data/public", "/data/public/", 1)
-        video['tmbfp'] = video['tmbfp'].replace('(', '%28').replace(')', '%29').replace('\\', '%5C')
-        # video['tmbfp'] = unquote(video['tmbfp'])
+        video['tmbfp'] = video['tmbfp'].replace('data/', '', 1) # removes the single data/ path so it works for the thumbnail, do not remove
+        video['tmbfp'] = video['tmbfp'].replace('(', '%28').replace(')', '%29').replace('\\', '%5C') # replaces parentheses for url encoding
+        video['tmbfp'] = unquote(video['tmbfp']) # may be possible to remove at this point
     # Pass the video data to the template
     directory = getattr(g, 'directory', None)
     search_api_key = get_meilisearch_public_key()
