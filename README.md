@@ -2,7 +2,7 @@
 
 ## VDM is a frontend downloader for youtube-dlp. Coded using python & flask with mongodb as the database. Json files saving as a support backup.
 
-#### This is still in early development and not all features have been implemented. Expect slow updates as I work, have a life, need entertainment time, etc... 
+# You are looking at the experimental branch. This is not going to work so don't bother using this code. It's for sharing/editing together with a group and fixing large bugs.
 
 #### Main is typically up to date and the latest as found on my instance of [VDM](https://vdm.0x0.la) (unless some *big* changes are coming).
 > Ideally, don't use mine as I don't have *that* much HD space and I'll end up deleting your [unwanted] data.
@@ -102,3 +102,38 @@ Write-Host $randomKeyHex
 
 ### Personal Note
 I've already used this for over 2000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
+
+## Experimental branch bugs
+- tmbfp *should be* giving data/public/thumbnails/filename.extension
+  - tmbfp is giving: /data/data/public/thumbnails/filename.extension
+  - or it is giving: data/data/public/thumbnails/filename.extension
+- downloading the json with yt-dlp will give random errors from time to time. The output is not guaranteed
+  - some options are:
+    - WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "GCWqx6mCd04")
+      - this is a new error and may disappear in a couple of weeks (random A/B tests), this can be safely ignored as of https://github.com/samstarnes/vdm/blob/6dcb0f1c13515c72f9ff0f09adc41c7528ff3146/app.py#L1277
+    - WARNING: Post-Processor arguments given without specifying name. The arguments will be given to all post-processors
+    - this one has two outputs:
+      - WARNING: [youtube] YouTube said: ERROR - Precondition check failed.
+      - WARNING: [youtube] HTTP Error 400: Bad Request. Retrying (1/3)...
+    - this one came after the json output
+      - ERROR: [generic] '298+140' is not a valid URL. Set --default-search "ytsearch" (or run  yt-dlp "ytsearch:298+140" ) to search YouTube
+    - this came before the output, multiple lines:
+      - WARNING: [youtube] YouTube said: ERROR - Precondition check failed.
+      - WARNING: [youtube] HTTP Error 400: Bad Request. Retrying (1/3)...
+      - WARNING: [youtube] YouTube said: ERROR - Precondition check failed.
+      - WARNING: [youtube] HTTP Error 400: Bad Request. Retrying (2/3)...
+      - WARNING: [youtube] YouTube said: ERROR - Precondition check failed.
+      - WARNING: [youtube] HTTP Error 400: Bad Request. Retrying (3/3)...
+      - WARNING: [youtube] YouTube said: ERROR - Precondition check failed.
+      - WARNING: [youtube] Unable to download API page: HTTP Error 400: Bad Request (caused by <HTTPError 400: Bad Request>); please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Confirm you are on the latest version using  yt-dlp -U
+    - error before json:
+      - WARNING: [youtube] Unable to download webpage: HTTPSConnectionPool(host='www.youtube.com', port=443): Read timed out. (read timeout=20.0)
+      - ERROR: 
+      - [download] Got error: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+      - ERROR: fragment 1 not found, unable to continue
+    - WARNING: [generic] Falling back on generic information extractor
+    - errors before json:
+      - WARNING: [TikTok] Expecting value in '': line 1 column 1 (char 0). Retrying... (attempt 1 of 4)
+      - WARNING: [TikTok] Expecting value in '': line 1 column 1 (char 0). Retrying... (attempt 2 of 4)
+      - WARNING: [TikTok] Expecting value in '': line 1 column 1 (char 0). Retrying... (attempt 3 of 4)
+      - WARNING: [TikTok] 7269236324131966238: Failed to parse JSON (caused by JSONDecodeError("Expecting value in '': line 1 column 1 (char 0)")); trying with webpage
