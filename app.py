@@ -231,7 +231,7 @@ def process_and_add_to_meilisearch():
     for video_info in unprocessed_items:
         try:
             logging.info(f"Current video_info data: {video_info}")
-            video_index = video_info.get('index') # still broken on ln268
+            video_index = video_info.get('index')
             video_id = video_info.get('id')
             if video_index is not None:
                 logging.info(f"process_and_add_to_meilisearch: Video Index: {video_index}")
@@ -537,6 +537,7 @@ def player():
     filename = request.args.get('filename')
     if not filename:
         return "Filename not provided", 400
+    filename = filename.replace('data/', '', 1)
 
     # Determine the content type based on the file extension
     file_extension = filename.split('.')[-1].lower()
@@ -1136,6 +1137,26 @@ def parse_progress(poutput):
         logging.error(f"Step 07: parse_progress() Failed to parse JSON from poutput: {poutput}")
         return None, None, None, None
 
+def clean_and_load_json(filename):
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            content = file.read()
+            # Remove common unwanted outputs that may appear before the JSON
+            start_index = content.find('{')
+            end_index = content.rfind('}') + 1
+            if start_index == -1 or end_index == -1:
+                raise ValueError("Valid JSON object not found in the file.")
+            # Extract the actual JSON part
+            json_str = content[start_index:end_index]
+            data = json.loads(json_str)
+            return data
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error in file {filename}: {e}")
+        return None
+    except Exception as e:
+        print(f"An error occurred while processing the file {filename}: {e}")
+        return None
+
 def download(url, args, cutout, output_base):
     #############################################################
     # Step 01 ###################################################
@@ -1517,7 +1538,6 @@ def download(url, args, cutout, output_base):
     collection.insert_one(video_info)
     logging.info('Step 16: Adding video_info[] to collection')
 		
-    process_and_add_to_meilisearch()
 
     #############################################################
     # Step 15 ###################################################
@@ -1607,10 +1627,13 @@ def delete_video(user, video_id):
 # Start the file deletion thread
 #threading.Thread(target=delete_old_files).start()
 
+# used for embed information, video.html
 @app.route('/data/<path:filename>')
 def serve_data(filename):
     printline(f"serve_data route: {filename}")
-    # filename = filename.replace('data/', '', 1)
+    logging.info(f"serve_data route before: {filename}")
+    filename = filename.replace('data/', '', 1)
+    logging.info(f"serve_data route after: {filename}")
     #printline(f"serve_data route after edit: {filename}")
     return send_from_directory('data', filename)
 
