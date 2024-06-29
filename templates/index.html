@@ -4,46 +4,52 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
 		<title>VDM/Video Download Manager</title>
-		<script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 		<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
 		<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.css" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:site_name" content="VDM - Video Download Manager" />
 	</head>
 	<body style="background: #171717;overflow-x: hidden;">
 		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
 			<div class="container">
-			<a class="navbar-brand d-flex align-items-center" href="/">
-				<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
-					<i class="material-icons">video_library</i>
-				</span>
-				<span style="color: rgb(255,255,255);font-size: 25px;">
-					<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
-				</span>
-			</a>
-			<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
-				<span class="visually-hidden">Toggle navigation</span>
-				<span class="navbar-toggler-icon"></span>
-			</button>
+				<a class="navbar-brand d-flex align-items-center" href="/">
+					<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
+						<i class="material-icons">video_library</i>
+					</span>
+					<span style="color: rgb(255,255,255);font-size: 25px;">
+						<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
+					</span>
+				</a>
+				<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
+					<span class="visually-hidden">Toggle navigation</span>
+					<span class="navbar-toggler-icon"></span>
+				</button>
 				<div class="collapse navbar-collapse" id="navcol-5">
 					<ul class="navbar-nav ms-auto">
 						<li class="nav-item">
-							<a class="nav-link" href="/login" id="login-link">Login</a>
+							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
 							<div id="user-info">
 								<span id="username" style="display: none;">
 									<a href="#" id="username-link"></a>
-										<div id="user-menu" style="display: none;">
-											<a href="#">Settings</a>
-											<a href="/logout" id="logout-link">Logout</a>
-										</div>
+									<div id="user-menu" style="display: none;">
+										<a href="#">Settings</a>
+										<a href="/logout" id="logout-link"><s>Logout</s></a>
+									</div>
 								</span>
 							</div>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="/register" id="login-link">Register</a>
+							<a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
 						</li>
 					</ul>
 				</div>
@@ -63,13 +69,13 @@
 						<div>
 							<div><label class="form-label" for="args">Custom Arguments:</label><br>
 								<input type="text" id="args" name="args" placeholder="Enter optional arguments" style="width: 100%;">
-								</div>
+							</div>
 							<div><label class="form-label" for="cutout">Timestamped Cutout (start-end):</label><br>
 								<input type="text" id="cutout" name="cutout" placeholder="Enter start &amp; end times for cutout" style="width: 100%;">
-								</div>
+							</div>
 							<div><label class="form-label" for="output">Output File Name:</label><br>
 								<input type="text" id="output" name="output" placeholder="Enter optional filename" style="width: 100%;">
-								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -109,11 +115,25 @@
 				<div>
 					<span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<input type="search" id="search-input" />
-					<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
-					<div id="resultsContainer"></div>
+					<form id="search-form" style="padding-bottom:15px;">
+					  <input type="search" id="search-input" class="searchbox"/>
+					</form>
+					<div id="resultsContainer" class="resultsContainer"></div>
 				</div>
 			</div>
+			<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
+			<script>
+        // Initialize the search bar with your specific settings
+				const meiliHostUrl = "{{ meilisearch_url }}"; 
+				const searchApiKey = "{{ search_api_key }}";
+        docsSearchBar.default({
+          hostUrl: meiliHostUrl,
+          apiKey: searchApiKey,
+          indexUid: 'yt-dlp_index',
+          inputSelector: '#search-input',
+          // Additional configuration...
+				});
+			</script>
 			<div class="col">
 				<div><span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
 					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
@@ -134,253 +154,342 @@
 		</div>
 		<div class="row" style="text-align: center;padding-bottom: 20px;">
 			<div class="col" style="font-size:20px;">
-				<!-- Previous page link -->
-				{% if p > 1 %}
-				<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
-				{% endif %}
-				<!-- Page number links -->
-				{% for p in range(1, total_pages + 1) %}
-				<a href="?p={{ p }}&ipp={{ ipp }}">{{ p }}</a>
-				{% endfor %}
-				<!-- Next page link -->
-				{% if p < total_pages %}
-				<a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
-				{% endif %}
+        <!-- SkipPrevious and Previous page links -->
+        {% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
+        {% if p > 1 %}
+				<p>
+					<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
+					<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
+				</p>
+				<p><a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a></p>
+        {% endif %}
+        <!-- Ellipsis before page numbers if needed -->
+        {% if p > page_display_limit %}
+				<span>...</span>
+        {% endif %}
+        <!-- Page number links -->
+        {% set start_page = p - page_display_limit // 2 %}
+        {% if start_page < 1 %}
+				{% set start_page = 1 %}
+        {% endif %}
+        {% set end_page = start_page + page_display_limit - 1 %}
+        {% if end_page > total_pages %}
+          {% set end_page = total_pages %}
+					{% endif %}
+					{% for page in range(start_page, end_page + 1) %}
+          <a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
+					{% endfor %}
+					<!-- Ellipsis after page numbers if needed -->
+					{% if end_page < total_pages %}
+          <span>...</span>
+					{% endif %}
+					<!-- Next and SkipNext page links -->
+					{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
+					{% if p < total_pages %}
+          <p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
+          <p>
+            <a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
+            <a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
+					</p>
+					{% endif %}
+				</div>
 			</div>
-		</div>
-		<div class="container">
-			<div class="row row-cols-1 row-cols-md-4 g-4">
-        {% for video in videos %}
-        <div class="col">
-					<div class="card h-100">
-						<!-- Display the video thumbnail -->
-						<div class="thumbnail-wrapper" style="background-image: url({{ url_for('serve_data', filename=video.tmbfp) }});"></div>
-						<div class="card-body">
-							<!-- Display the video title and link to the video -->
-							<h5 class="card-title">
-								<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
-							</h5>
-							<!-- Display other video data -->
-							<p class="card-text">User: {{ video.user }}</p>
-							<p class="card-text">Duration: {{ video.length }}</p>
-							<p class="card-text">Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
-							<p class="card-text">File size (Bytes): {{ video.file_size_bytes }}</p>
-							<p class="card-text">File size (Readable): {{ video.file_size_readable }}</p>
-							<p class="card-text">Resolution: {{ video.resolution }}</p>
-							<p class="card-text">Aspect Ratio: {{ video.aspect_ratio }}</p>
-							<p class="card-text">Video ID: {{ video.id }}</p>
-							<p class="card-text">mongoDB ID: {{ video._id }}</p>
-							<p class="card-text dirlink">Download Link: {{ video.filename }}</p>
-							<script>
-  							var bdir = "{{ bdir }}" // passing base directory
-  							function replaceSpacesWithNbsp(str) {
-      						return str.replace(/ +/g, function(match) {
-          					return Array(match.length + 1).join('&nbsp;');
-      						});
-  							}
-  							document.addEventListener('DOMContentLoaded', function() {
-      						var linkElements = document.querySelectorAll('.card-text.dirlink');
-      						linkElements.forEach(function(linkElement) {
-          					var fullPath = linkElement.textContent.replace('Download Link: ','').replace(bdir,'');
-          					var linkPath = fullPath.substring(fullPath.indexOf('/data/'));
-          					linkElement.innerHTML = 'Download Link: <a href="' + encodeURI(linkPath) + '">' + linkPath + '</a>';
-      						});
-  							});
-							</script>
+			<div class="container">
+				<div class="row row-cols-1 row-cols-md-4 g-4">
+					{% for video in videos %}
+					<div class="col">
+						<div class="card h-100">
+							<!-- Display the video thumbnail -->
+							<div class="thumbnail-wrapper" style="background-image: url({{ url_for('serve_data', filename=video.tmbfp) }});"></div>
+							<div class="card-body">
+								<!-- Display the video title and link to the video -->
+								<h5 class="card-title">
+									<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
+								</h5>
+								<!-- Display other video data -->
+								<p class="card-text">Video ID: {{ video.id }}</p>
+								<p class="card-text">User: {{ video.user }}</p>
+								<p class="card-text">Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
+								<p class="card-text">Duration: {{ video.length }}</p>
+								<p class="card-text">File size (Bytes): {{ video.file_size_bytes }}</p>
+								<p class="card-text">File size (Readable): {{ video.file_size_readable }}</p>
+								<p class="card-text">Resolution: {{ video.resolution }}</p>
+								<p class="card-text">Aspect Ratio: {{ video.aspect_ratio }}</p>
+								<p class="card-text">mongoDB ID: {{ video._id }}</p>
+								<p class="card-text dirlink">Download Link: {{ video.filename }}</p>
+								<script>
+									var bdir = "{{ bdir }}" // passing base directory
+									function replaceSpacesWithNbsp(str) {
+										return str.replace(/ +/g, function(match) {
+											return Array(match.length + 1).join('&nbsp;');
+										});
+									}
+									document.addEventListener('DOMContentLoaded', function() {
+										var linkElements = document.querySelectorAll('.card-text.dirlink');
+										linkElements.forEach(function(linkElement) {
+											var fullPath = linkElement.textContent.replace('Download Link: ','').replace(bdir,'');
+											var linkPath = fullPath.substring(fullPath.indexOf('/data/'));
+											linkElement.innerHTML = 'Download Link: <a href="' + encodeURI(linkPath) + '">' + linkPath + '</a>';
+										});
+									});
+								</script>
+							</div>
+							<div class="card-footer">
+								<small class="text-muted">Download Date: {{ video.archive_date }}</small><br>
+								<small class="text-muted">Upload Date: {{ video.date_posted }}</small>
+							</div>
 						</div>
-						<div class="card-footer">
-							<small class="text-muted">Download Date: {{ video.archive_date }}</small><br>
-							<small class="text-muted">Upload Date: {{ video.date_posted }}</small>
+					</div>
+					{% endfor %}
+				</div>
+				<div class="row" style="text-align: center;padding-bottom: 20px;">
+					<div class="col" style="font-size:20px;">
+						<!-- SkipPrevious and Previous page links -->
+						{% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
+						{% if p > 1 %}
+						<p>	
+							<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
+							<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
+						</p>
+						<p><a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a></p>
+						{% endif %}
+						<!-- Ellipsis before page numbers if needed -->
+						{% if p > page_display_limit %}
+						<span>...</span>
+						{% endif %}
+						<!-- Page number links -->
+						{% set start_page = p - page_display_limit // 2 %}
+						{% if start_page < 1 %}
+						{% set start_page = 1 %}
+						{% endif %}
+						{% set end_page = start_page + page_display_limit - 1 %}
+						{% if end_page > total_pages %}
+							{% set end_page = total_pages %}
+							{% endif %}
+							{% for page in range(start_page, end_page + 1) %}
+							<a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
+							{% endfor %}
+							<!-- Ellipsis after page numbers if needed -->
+							{% if end_page < total_pages %}
+							<span>...</span>
+							{% endif %}
+							<!-- Next and SkipNext page links -->
+							{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
+							{% if p < total_pages %}
+							<p>
+								<p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
+								<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
+								<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
+							</p>
+							{% endif %}
 						</div>
 					</div>
 				</div>
-        {% endfor %}
-			</div>
-			<div class="row" style="text-align: center;padding-bottom: 20px;">
-				<div class="col" style="font-size:20px;">
-					<!-- Previous page link -->
-					{% if p > 1 %}
-					<a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous</a>
-					{% endif %}
-					<!-- Page number links -->
-					{% for p in range(1, total_pages + 1) %}
-					<a href="?p={{ p }}&ipp={{ ipp }}">{{ p }}</a>
-					{% endfor %}
-					<!-- Next page link -->
-					{% if p < total_pages %}
-					<a href="?p={{ p + 1 }}&ipp={{ ipp }}">Next</a>
-					{% endif %}
-				</div>
-			</div>
-		</div>
-		<!-- ############### Javascript begins here ############### --> 
-		<script>
-			document.addEventListener('DOMContentLoaded', function () {
-			// This function is called when the DOM is fully loaded
-			// Get the input element and the results container
-			const searchInput = document.getElementById('search-input');
-			const resultsContainer = document.getElementById('resultsContainer');
-			function search(query) {
-				// Backend endpoint
-				const BACKEND_HOST = 'https://vdm.0x0.la/'; // Replace with your backend host
-				const url = `${BACKEND_HOST}/search`;
-				// Send the search query to the backend
-				fetch(url, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({ query: query }) // Send the query to your backend
-				})
-				.then(response => response.json())
-				.then(data => {
-					// Clear previous results
-					resultsContainer.innerHTML = '';
-					// Handle the search results here
-					data.hits.forEach(hit => {
-						// Create a new div element for each result
-						var resultDiv = document.createElement('div');
-						resultDiv.textContent = hit.title; // Assume 'title' is a field in your documents
-						// Add the result div to the results container
-						resultsContainer.appendChild(resultDiv);
+				<!-- ############### Javascript begins here ############### --> 
+				<script>
+					document.addEventListener('DOMContentLoaded', function () {
+						// This function is called when the DOM is fully loaded
+						// Get the input element and the results container
+						const searchInput = document.getElementById('search-input');
+						const resultsContainer = document.getElementById('resultsContainer');
+						function search(query) {
+							// Clear previous results
+							resultsContainer.innerHTML = '';
+							// Send the search query to the backend
+							fetch('/search', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({ query: query }) // Send the query to your backend
+							})
+							.then(response => response.json())
+							.then(data => {
+								let isAlternate = false; // Flag for alternate background colors
+								// Handle the search results here
+								data.hits.forEach(hit => {
+									// Create a new div element for each result
+									var resultLink = document.createElement('a');
+									resultLink.textContent = hit.title; // Set the text to the title
+									resultLink.href = `/videos/${hit.primaryKey}`; // Set the href to video URL
+									resultLink.target = "_blank"; // Open in new tab
+									resultLink.style.width = '100%';
+									resultLink.style.display = 'inline-block';
+									resultLink.style.background = isAlternate ? 'rgb(15,15,15,1)' : 'rgb(40,40,40,1)';
+									// Add the result href and line break to the results
+									resultsContainer.appendChild(resultLink);
+									resultsContainer.appendChild(document.createElement('br'));
+									isAlternate = !isAlternate; // Toggle flag for next item
+								});
+							})
+							.catch(error => {
+								console.error('Error during search request:', error);
+							});
+						}
+						// Event listener for the input's input event
+						searchInput.addEventListener('input', function () {
+							// Get the current input value
+							var query = searchInput.value;
+							// If the query isn't empty, search; otherwise, clear the results
+							if (query.trim()) {
+								search(query);
+								} else {
+								resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
+							}
+						});
 					});
-				})
-				.catch(error => {
-					console.error('Error during search request:', error);
-					// Handle errors here
-				});
-			}
-			// Event listener for the input's input event
-			searchInput.addEventListener('input', function () {
-				// Get the current input value
-				var query = searchInput.value;
-				// If the query isn't empty, search; otherwise, clear the results
-				if (query.trim()) {
-					search(query);
-				} else {
-					resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
-				}
-			});
-		});
-		</script>
-		<script>
-			$(document).ready(function(){
-				$("#download-form").on('submit', function(event){
+				</script>
+				
+				<script>
+					$(document).ready(function(){
+						// Function to prefill the video URL and optionally submit the form
+						function prefillVideoUrlAndSubmit() {
+							const queryParams = new URLSearchParams(window.location.search);
+							const videoUrl = queryParams.get('videoUrl');
+							if (videoUrl) {
+								$('#url').val(decodeURIComponent(videoUrl));
+								
+								// Automatically submit the form if a video URL is provided
+								// Consider adding a slight delay if needed to ensure form is fully ready
+								setTimeout(function() {
+									$("#download-form").submit();
+								}, 500); // 500 milliseconds delay before submitting
+							}
+						}
+						
+						// Attach the form submission event handler
+						$("#download-form").on('submit', function(event){
+							event.preventDefault();
+							$("#status").html("Download started...");
+							$.post("/download", $(this).serialize(), function(data){
+								$("#status").html(data);
+							});
+						});
+						
+						// Check for video URL query parameter and handle form prefilling/submission
+						prefillVideoUrlAndSubmit();
+					});
+				</script>
+				
+				<!-- <script>
+					$(document).ready(function(){
+					$("#download-form").on('submit', function(event){
 					event.preventDefault();
 					$("#status").html("Download started...");
 					$.post("/download", $(this).serialize(), function(data){
-						$("#status").html(data);
+					$("#status").html(data);
 					});
-				});
-			});
-		</script>
-		<script>
-			$(document).ready(function(){
-				// Check if the user is logged in
-				if (sessionStorage.getItem('username')) {
-					// If the user is logged in, hide the login link and show the username and user menu
-					$('#login-link').hide();
-					$('#username-link').text(sessionStorage.getItem('username'));
-					$('#username').show();
-				}
-				// Show the user menu when the username is clicked
-				$('#username-link').click(function(event){
-					event.preventDefault();
-					$('#user-menu').toggle();
-				});
-				// Handle the login form submission
-				$('#login-form').submit(function(event){
-					event.preventDefault();
-					$.post("/login", $(this).serialize(), function(data){
-						// If the login is successful, store the username in sessionStorage, hide the login link, and show the username and user menu
-						sessionStorage.setItem('username', $('#username-input').val());
-						$('#login-link').hide();
-						$('#username-link').text(sessionStorage.getItem('username'));
-						$('#username').show();
 					});
-				});
-				// Handle the logout link click
-				$('#logout-link').click(function(event){
-					event.preventDefault();
-					$.post("/logout", function(data){
-						// If the logout is successful, remove the username from sessionStorage, hide the username and user menu, and show the login link
-						sessionStorage.removeItem('username');
-						$('#username').hide();
-						$('#user-menu').hide();
-						$('#login-link').show();
 					});
-				});
-			});
-		</script>
-		<script>
-			var source = new EventSource("/stream");
-			source.onopen = function(event) {
-				console.log("Connection to server opened.");
-			};
-			source.addEventListener('download_progress', function(event) {
-				var data = JSON.parse(event.data);
-				console.log(data);
-				var progress = data.progress;
-				var total = data.total;
-				var speed = data.speed;
-				var eta = data.eta;
-				document.getElementById('progress-bar').style.width = progress + '%';
-				document.getElementById('progress-info').innerText = total + " " + speed;
-			});
-			source.onerror = function(event) {
-				console.error("Error occurred:", event);
-			};
-		</script>
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				var dropdownItems = document.querySelectorAll('#items-per-page-dropdown .dropdown-item');
-				var button = document.getElementById('items-per-page-button');
-				// Set the button's text from the cookie
-				var itemsPerPage = getCookie('ipp');
-				if (itemsPerPage) {
-					button.textContent = itemsPerPage;
-				}
-				// Add click event listeners to the dropdown items
-				dropdownItems.forEach(function(item) {
-					item.addEventListener('click', function(event) {
-            // Update the button's text
-            button.textContent = event.target.textContent;
-            // Store the selected value in a cookie
-            setCookie('ipp', event.target.textContent, 365);
+					</script>
+				-->
+				<script>
+					$(document).ready(function(){
+						// Check if the user is logged in
+						if (sessionStorage.getItem('username')) {
+							// If the user is logged in, hide the login link and show the username and user menu
+							$('#login-link').hide();
+							$('#username-link').text(sessionStorage.getItem('username'));
+							$('#username').show();
+						}
+						// Show the user menu when the username is clicked
+						$('#username-link').click(function(event){
+							event.preventDefault();
+							$('#user-menu').toggle();
+						});
+						// Handle the login form submission
+						$('#login-form').submit(function(event){
+							event.preventDefault();
+							$.post("/login", $(this).serialize(), function(data){
+								// If the login is successful, store the username in sessionStorage, hide the login link, and show the username and user menu
+								sessionStorage.setItem('username', $('#username-input').val());
+								$('#login-link').hide();
+								$('#username-link').text(sessionStorage.getItem('username'));
+								$('#username').show();
+							});
+						});
+						// Handle the logout link click
+						$('#logout-link').click(function(event){
+							event.preventDefault();
+							$.post("/logout", function(data){
+								// If the logout is successful, remove the username from sessionStorage, hide the username and user menu, and show the login link
+								sessionStorage.removeItem('username');
+								$('#username').hide();
+								$('#user-menu').hide();
+								$('#login-link').show();
+							});
+						});
 					});
-				});
-			});
-			// Function to set a cookie
-			function setCookie(name, value, days) {
-				var expires = "";
-				if (days) {
-					var date = new Date();
-					date.setTime(date.getTime() + (days*24*60*60*1000));
-					expires = "; expires=" + date.toUTCString();
-				}
-				document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-			}
-			// Function to get a cookie
-			function getCookie(name) {
-				var nameEQ = name + "=";
-				var ca = document.cookie.split(';');
-				for(var i=0;i < ca.length;i++) {
-					var c = ca[i];
-					while (c.charAt(0)==' ') c = c.substring(1,c.length);
-					if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-				}
-				return null;
-			}
-		</script>
-		<script>
-			document.getElementById('items-per-page-dropdown').addEventListener('click', function(event) {
-				if (event.target.tagName === 'A') {
-					var itemsPerPage = event.target.textContent;
-					var url = new URL(window.location.href);
-					url.searchParams.set('ipp', itemsPerPage);
-					window.location.href = url.toString();
-				}
-			});
-		</script>
-	</body>
-</html>
+				</script>
+				<script>
+					var source = new EventSource("/stream");
+					source.onopen = function(event) {
+						console.log("Connection to server opened.");
+					};
+					source.addEventListener('download_progress', function(event) {
+						var data = JSON.parse(event.data);
+						console.log(data);
+						var progress = data.progress;
+						var total = data.total;
+						var speed = data.speed;
+						var eta = data.eta;
+						document.getElementById('progress-bar').style.width = progress + '%';
+						document.getElementById('progress-info').innerText = total + " " + speed;
+					});
+					source.onerror = function(event) {
+						console.error("Error occurred:", event);
+					};
+				</script>
+				<script>
+					document.addEventListener('DOMContentLoaded', function() {
+						var dropdownItems = document.querySelectorAll('#items-per-page-dropdown .dropdown-item');
+						var button = document.getElementById('items-per-page-button');
+						// Set the button's text from the cookie
+						var itemsPerPage = getCookie('ipp');
+						if (itemsPerPage) {
+							button.textContent = itemsPerPage;
+						}
+						// Add click event listeners to the dropdown items
+						dropdownItems.forEach(function(item) {
+							item.addEventListener('click', function(event) {
+								// Update the button's text
+								button.textContent = event.target.textContent;
+								// Store the selected value in a cookie
+								setCookie('ipp', event.target.textContent, 365);
+							});
+						});
+					});
+					// Function to set a cookie
+					function setCookie(name, value, days) {
+						var expires = "";
+						if (days) {
+							var date = new Date();
+							date.setTime(date.getTime() + (days*24*60*60*1000));
+							expires = "; expires=" + date.toUTCString();
+						}
+						document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+					}
+					// Function to get a cookie
+					function getCookie(name) {
+						var nameEQ = name + "=";
+						var ca = document.cookie.split(';');
+						for(var i=0;i < ca.length;i++) {
+							var c = ca[i];
+							while (c.charAt(0)==' ') c = c.substring(1,c.length);
+							if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+						}
+						return null;
+					}
+				</script>
+				<script>
+					document.getElementById('items-per-page-dropdown').addEventListener('click', function(event) {
+						if (event.target.tagName === 'A') {
+							var itemsPerPage = event.target.textContent;
+							var url = new URL(window.location.href);
+							url.searchParams.set('ipp', itemsPerPage);
+							window.location.href = url.toString();
+						}
+					});
+				</script>
+			</body>
+		</html>		

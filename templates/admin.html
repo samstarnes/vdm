@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en" style="background: #171717;">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+		<title>YT-DLP Downloader</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/Off-Canvas-Sidebar-Drawer-Navbar.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/Sidebar-Menu-sidebar.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/Sidebar-Menu.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/astyles.css') }}">
+		<style>
+			/* Basic styling for the tree view */
+			ul.tree { list-style-type: none; }
+			ul.tree ul { margin-left: 20px; }
+			.tree, .nested { list-style-type: none; }
+			.tree li { cursor: pointer; position: relative; }
+			.tree li:before { content: '...';position: absolute;left: -1em; }
+			.tree li div[style*="display: block;"] + ul:before { content: '▼'; }
+			/* .nested { display: none; } */
+			.active { display: block; }
+			.folder::before {
+			content: '\1F4C1'; /* Folder emoji, change as needed */
+			margin-right: 5px; }
+			.folder { cursor: pointer; }
+			.folder { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+			input[type="text"],input[type="checkbox"] {	font-size:16px; }
+			.directory-tree-container { overflow-y: auto;	max-height: 400px; }
+			#directoryTreeTable { width: 100%; }
+			#directoryTreeTable tr:nth-child(even) { background-color: #3e3e3e;	color: #fff; }
+			#directoryTreeTable tr:nth-child(odd) {	background-color: #2f2f2f; color: #fff; }
+			#directoryTreeTable td { padding: 8px;	text-align: left; }
+			#directoryTreeTable td:nth-child(2) {	text-align: center; }
+			.directory-name::before {	content: '▶';	display: inline-block;	margin-right: 5px; transform: rotate(0deg); transition: transform 0.3s ease; }
+			.directory-name.expanded::before { transform: rotate(90deg); }
+			.sticky-save { position: fixed;	right: 20px; bottom: 20px; padding: 10px 20px; z-index: 1000; }
+			.sticky-save { background-color: #4CAF50; color: white;	border: none;	cursor: pointer; border-radius: 5px; z-index: 1000;	}
+			.sticky-save:hover { background-color: #45a049;	}
+			tr { border-color: #484848;	border-width: 1px; border-style: dotted; }
+			.content-area{ max-height:100vh; width:100%; box-sizing:border-box;	}
+			@media (max-width: 768px) {	
+			.content-area {	
+			width: 100%; 
+			}
+			}
+			th {width:48%}
+		</style>
+	</head>
+	<body class="d-flex flex-column" style="background: #171717;overflow-x: hidden;overflow-y:auto;">
+		
+		<main>
+			<nav class="navbar navbar-expand-md navbar-dark py-3" style="background: #0e0e0e;position: fixed;width: 100%;">
+				<div class="container"><a class="navbar-brand d-flex align-items-center" href="/"><span class="d-flex justify-content-center align-items-center bs-icon-sm bs-icon-rounded bs-icon-primary me-2 bs-icon" style="background:#990000;"><i class="material-icons">video_library</i></span><span style="color:rgb(255,255,255);font-size:25px;"><strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager </span></a><button data-bs-toggle="collapse" data-bs-target="#navcol-5" class="navbar-toggler"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+					<div class="collapse navbar-collapse" id="navcol-5">
+						<ul class="navbar-nav ms-auto">
+							<li class="nav-item"><a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a></li>
+							<li class="nav-item"><a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
+								<div id="user-info"><span id="username" style="display:none;"><a href="#" id="username-link"></a><div id="user-menu" style="display:none;"><a href="#">Settings</a><a href="/logout" id="logout-link"><s>Logout</s></a></div></span></div>
+							</li>
+							<li class="nav-item"><a class="nav-link" href="/register" id="login-link"><s>Register</s></a></li>
+						</ul>
+					</div>
+				</div>
+			</nav>
+			
+			<!-- Notification Area -->
+			<div id="notificationArea" style="display: none; position: fixed; top: 20px; right: 20px; padding: 10px; background-color: #f44336; color: white; border-radius: 5px; z-index: 2000;"></div>
+			
+			<main class="d-flex" style="flex-shrink: 0;">
+				
+				<main class="d-flex d-sm-flex d-md-flex d-lg-flex d-xl-flex d-xxl-inline-flex flex-grow-0 m-sidebar" style="position: fixed;">
+					<div id="sidebarToggle"></div>
+					<div class="container-fluid d-flex p-0 divnav">
+						<nav class="navbar navbar-expand-lg bg-dark off-canvas navbar-dark snavbar" data-right-drawer="0" data-open-drawer="1">
+							<div class="container flex-column divnav">
+								<ul class="navbar-nav d-xxl-flex justify-content-xxl-center align-items-xxl-center flex-column drawer-menu navbar-side nav-items">
+									<li class="nav-item"><a class="nav-link" href="#">User Management</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">Content Manager</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">Console and Scripts</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">Backup and Restore</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">Analytics and Reports</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">System Status and Logs</a></li>
+									<li class="nav-item"><a class="nav-link" href="#">Security Logs</a></li>
+								</ul>
+							</div>
+						</nav>
+					</div>
+				</main>
+				
+				<main class="d-block d-sm-block d-md-block d-lg-block d-xl-block d-xxl-block flex-grow-1 justify-content-xxl-center align-items-xxl-center m-grid content-area" style="flex-grow:1;width:90%;max-height:100vh;">
+					<div class="row g-0 dr1" style="width: 100%;">
+						<div class="col">
+							<p class="fs-1 justify-content-xxl-left align-items-xxl-center" id="tc1" style="height: 100%;color: rgb(255,255,255);">Title</p>
+						</div>
+					</div>
+					<div class="row g-0 dr2" style="width: 100%;">
+						<div class="col">
+							<p class="fs-1 justify-content-xxl-left align-items-xxl-center" id="tc2" style="height: 100%;color: rgb(255,255,255);">Title</p>
+						</div>
+					</div>
+					<div class="row g-0 dr3" style="width: 100%;">
+						<div class="col">
+							<p class="fs-1 justify-content-xxl-left align-items-xxl-center" id="tc3" style="height: 100%;color: rgb(255,255,255);">Title</p>
+						</div>
+					</div>
+					<div class="row g-0 dr4" style="width: 100%;">
+						<div class="col">
+							<p class="fs-1 justify-content-xxl-left align-items-xxl-center" id="tc4" style="height: 100%;color: rgb(255,255,255);">Title</p>
+						</div>
+					</div>
+					<button id="saveButton" class="sticky-save">Save Changes</button>
+				</main>
+				
+			</main>
+		</main>
+		<script>
+			// Directory Structure for storage selection
+			const directoryStructure = {{ directory_structure|tojson|safe }};
+			function buildTree(container, treeData, currentPath = '') {
+				Object.keys(treeData).forEach((key) => {
+					if (key !== "_files" && key !== "") { // Skip processing if the key is "_files" or empty
+						const fullPath = currentPath + key + "/";
+						const row = container.insertRow(-1); // Append new row at the end
+						const cell1 = row.insertCell(0);
+						const cell2 = row.insertCell(1);
+						// Indent the directory name based on its level in the hierarchy
+						cell1.style.paddingLeft = `${currentPath.split('/').length * 20}px`; // Increase indentation for each level
+						cell1.style.backgroundColor = '#202020';
+						cell2.style.backgroundColor = '#202020';
+						cell1.style.color = '#fff';
+						cell2.style.color = '#fff';
+						
+						// Directory name with toggle functionality
+						const dirName = document.createElement('span');
+						dirName.textContent = key;
+						dirName.style.cursor = 'pointer';
+						cell1.appendChild(dirName);
+						
+						const checkbox = document.createElement('input');
+						checkbox.type = 'checkbox';
+						checkbox.setAttribute('data-path', fullPath); // Store the path for saving
+						checkbox.addEventListener('change', function() { updateNewPathInput(fullPath, this.checked); });
+						cell2.appendChild(checkbox);
+						cell2.style.textAlign = 'center'; // Center the checkbox
+						
+						// If there are nested directories, recursively build the tree for them
+						if (Object.keys(treeData[key]).length > 0) {
+							const nestedContainer = document.createElement('table');
+							nestedContainer.style.display = 'none'; // Initially hide nested directories
+							nestedContainer.style.width = '100%'; // Ensure nested table uses full width
+							nestedContainer.style.borderColor = 'rgb(0,0,0,0)';
+							
+							// Toggle visibility on click
+							dirName.onclick = function() {
+								nestedContainer.style.display = nestedContainer.style.display === 'none' ? '' : 'none';
+							};
+							
+							const nestedRow = container.insertRow(-1);
+							const nestedCell = nestedRow.insertCell(0);
+							nestedCell.colSpan = 2; // Span across both columns
+							nestedCell.style.backgroundColor = '#202020';
+							nestedCell.style.color = '#202020';
+							nestedCell.appendChild(nestedContainer);
+							buildTree(nestedContainer, treeData[key], fullPath); // Increase the level for nested directories
+						}
+					}
+				});
+			}
+			
+			function updateNewPathInput(path, isChecked) {
+				const newPathInput = document.getElementById('newPath');
+				// Split the current input value by comma, trim spaces, and remove quotes
+				let currentPaths = newPathInput.value ? newPathInput.value.split(',').map(p => p.trim().replace(/^"|"$/g, '')) : [];
+				if (isChecked) {
+					// Add the path if not already in the list
+					if (!currentPaths.includes(path)) {
+            currentPaths.push(path);
+					}
+					} else {
+					// Remove the path if it's in the list
+					currentPaths = currentPaths.filter(p => p !== path);
+				}
+				// Wrap each path with quotes and join them with comma and space for the input value
+				newPathInput.value = currentPaths.map(p => `"${p}"`).join(', ');
+			}
+			
+			const contentMap = {
+				"User Management": {
+					tc1: "Content for TC1 from User Management",
+					tc2: "Content for TC2 from User Management",
+					tc3: "Content for TC3 from User Management",
+					tc4: "Content for TC4 from User Management"
+				},
+				"Content Manager": {
+					tc1: "<h1><strong>Move Storage</strong></h1>",
+					tc2: "<div style='font-size:16px;'><table><thead><tr><th>Volume Path</th><th>Free Space</th><th>Total Space</th></tr></thead><tbody>{% for volume in volume_usages %}<tr><td>{{ volume.path }}</td><td>{{ volume.free_gb }} GB</td><td>{{ volume.total_gb }} GB</td></tr>{% endfor %}</tbody></table></div><div style='font-size:16px;width:150px;'><select id='storageStrategy' class='form-control'><option value='round_robin'>Round Robin</option><option value='high_watermark'>High Watermark</option></select></div>",
+					tc3: "<button id='moveDataButton' class='btn btn-primary'>Test Move Data</button><p style='font-size:16px;'>Select the directories in which you want to create the data folder (data/thumbnails, data/json, data/videos)</p><br><input type='text' id='newPath' name='newPath' class='form-control' required><input type='checkbox' id='dryRun' name='dryRun'/><label for='dryRun' style='font-size:16px'>Dry Run</label>",
+					tc4: "<div class='directory-tree-container' style='font-size: 16px;width:100%'><table id='directoryTreeTable' class='table'><thead><tr style='background:#202020;color:#fff'><th style='background:#202020;color:#fff'>Directory</th><th style='background:#202020;color:#fff'>Select</th></tr></thead><tbody></tbody></table></div>"
+				},
+				"Console and Scripts": {
+					tc1: "Content for TC1 from Console and Scripts",
+					tc2: "Content for TC2 from Console and Scripts",
+					tc3: "Content for TC3 from Console and Scripts",
+					tc4: "Content for TC4 from Console and Scripts"
+				},
+				"Backup and Restore": {
+					tc1: "<h1><strong>Backup</strong></h1>",
+					tc2: "<a href='/backup_all' class='btn btn-primary'>Download Backup</a>",
+					tc3: "<h1><strong>Restore</strong></h1>",
+					tc4: "<div style='font-size:16px;'><form action='/restore_all' method='post' enctype='multipart/form-data'><label for='backupFile'>Upload Backup Zip:</label><input type='file' id='backupFile' name='backupFile' accept='.zip'><button type='submit'>Restore</button></form></div>"
+				},
+				"Analytics and Reports": {
+					tc1: "<h1><strong>Analytics and Reports</strong></h1>",
+					tc2: "<div id='analyticsReport' style='padding: 20px; background-color: #f5f5f5; border-radius: 10px; margin-top: 20px;'><h2 style='color: #333; text-align: center;'>Download Statistics</h2>",
+					tc3: "<div style='overflow-x: auto;font-size:16px'><table style='width: 100%; border-collapse: collapse;'><thead><tr style='background-color: #007bff; color: #ffffff;'><th style='padding: 8px; text-align: left;'>Domain</th><th style='padding: 8px; text-align: right;'>Downloads</th></tr></thead><tbody>{% for domain, count in statistics.domains.items() %}<tr><td style='padding: 8px;'>{{ domain }}</td><td style='padding: 8px; text-align: right;'>{{ count }}</td></tr>{% endfor %}</tbody></table></div>",
+					tc4: "<div style='margin-top: 20px; text-align: center;'><strong>Total Downloads:</strong> <span id='totalDownloads' style='font-size: 20px;'>{{ statistics.total_downloads }}</span></div></div>"
+				},
+				"System Status and Logs": {
+					tc1: "<h1><strong>System Status and Logs</strong></h1>",
+					tc2: "<div class='table-responsive' style='font-size:16px;'><table style='border-collapse:initial;'><thead><tr><th>Service</th><th>Port</th></tr></thead><tbody><tr><td>YTDL</td><td>{{ docker_port_ytdl }}</td></tr><tr><td>YTDLDB</td><td>{{ docker_port_ytdldb }}</td></tr><tr><td>Redis</td><td>{{ docker_port_ytdlredis }}</td></tr><tr><td>MeiliSearch</td><td>{{ docker_port_ytdlmeili }}</td></tr></tbody></table></div>",
+					tc3: "Content for TC3 from System Status and Logs",
+					tc4: "Content for TC4 from System Status and Logs"
+				},
+				"Security Logs": {
+					tc1: "<h1><strong>Security Logs</strong></h1>",
+					tc2: "Content for TC2 from Security Logs",
+					tc3: "Content for TC3 from Security Logs",
+					tc4: "Content for TC4 from Security Logs"
+				},
+			};
+			
+			// Function to dynamically build and display the directory tree for "Content Manager"
+			function displayDirectoryTree() {
+				const directoryTreeTableBody = document.querySelector('#directoryTreeTable tbody');
+				if (!directoryStructure) {
+					console.error("directoryStructure is not defined.");
+					return; // Exit the function if directoryStructure is not defined
+				}
+				directoryTreeTableBody.innerHTML = ''; // Clear existing entries
+				buildTree(directoryTreeTableBody, directoryStructure);
+			}
+			
+			// Configuration mapping link texts to class widths
+			const linkWidthConfig = {
+				"Content Manager": {
+					targetClasses: ['dr1', 'dr3'],
+					width: '15%'
+				},
+				"Analytics and Reports": {
+					targetClasses: ['dr1', 'dr2', 'dr3', 'dr4'],
+					width: '15%'
+				},
+			};
+			
+			// Function to apply content widths based on the clicked link text
+			function applyWidthsForLink(linkText) {
+				// Reset widths to default for all classes first
+				['dr1', 'dr2', 'dr3', 'dr4'].forEach(className => {
+					document.querySelectorAll('.' + className).forEach(element => {
+            element.style.width = '100%'; // Default width
+					});
+				});
+				
+				// Apply specific widths if the linkText matches a configuration
+				if (linkWidthConfig[linkText]) {
+					const { targetClasses, width } = linkWidthConfig[linkText];
+					targetClasses.forEach(className => {
+            document.querySelectorAll('.' + className).forEach(element => {
+							element.style.width = width;
+						});
+					});
+				}
+			}
+			
+			// Handles nav-links, their content and width
+			document.addEventListener('DOMContentLoaded', function() {
+				const navLinks = document.querySelectorAll('.nav-link');
+				navLinks.forEach(link => {
+					link.addEventListener('click', function(event) {
+						event.preventDefault();
+						const linkText = link.textContent.trim();
+						applyWidthsForLink(linkText); // apply width for each item
+						const content = contentMap[linkText];
+						if (content) {
+							for (let i = 1; i <= 4; i++) {
+								const paragraph = document.getElementById(`tc${i}`);
+								if (paragraph) {
+									paragraph.innerHTML = content[`tc${i}`];
+								}
+							}
+						}
+            if (linkText === "Content Manager") {
+							displayDirectoryTree();
+							} else if (linkText === "Analytics and Reports") {
+							// 
+						}
+					});
+				});
+			});
+			
+			function displayNotification(message, isSuccess) {
+				console.log('Displaying notification:', message, isSuccess); // Debug notification
+				const notificationArea = document.getElementById('notificationArea');
+				notificationArea.style.backgroundColor = isSuccess ? '#4CAF50' : '#990000'; // Green for success, red for error
+				notificationArea.innerText = message;
+				notificationArea.style.display = 'block';
+				setTimeout(() => {
+					notificationArea.style.display = 'none';
+				}, 5000); // Hide notification after 5 seconds
+			}
+			
+			console.log('Move button script loading');
+			
+			document.addEventListener('DOMContentLoaded', (event) => {
+				console.log("DOM fully loaded. Setting up event delegation for moveDataButton.");
+				
+				// Use document or a static parent element for event delegation
+				document.addEventListener('click', function(event) {
+					// Check if the clicked element is the moveDataButton
+					if (event.target.id === 'moveDataButton') {
+            console.log('Move button clicked');
+            fetch('/test-move-data', { // Posting data to server
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({})
+						})
+            .then(response => { // 'Ok' Response with network error checking
+							console.log('Response received');
+							if (!response.ok) {
+								throw new Error('Network response was not ok');
+							}
+							return response.json();
+						})
+            .then(data => { // Success Response
+							console.log('Success:', data);
+							displayNotification(data.message, true);
+						})
+            .catch((error) => { // Error Response
+							console.error('Error:', error);
+							displayNotification('An error occurred.', false);
+						});
+					}
+				});
+			});
+			console.log('Event delegation for moveDataButton set');
+
+			// Handle save button click
+			document.getElementById('saveButton').addEventListener('click', function() {
+				const selectedDirectories = [];
+				document.querySelectorAll('#directoryTreeTable input[type="checkbox"]:checked').forEach(checkbox => {
+					selectedDirectories.push(checkbox.getAttribute('data-path'));
+				});
+				
+				// Prepare the data object for saving
+				const settingsData = {
+					volumes: selectedDirectories,
+					strategy: document.getElementById('storageStrategy').value,
+					// theme: document.getElementById('themeSelector').value,
+					// Add more settings here...
+				};
+				
+				// Send the settings data to the Flask backend
+				fetch('/save-settings', {
+					method: 'POST',
+					headers: {
+            'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(settingsData),
+				})
+				.then(response => {
+					if (!response.ok) {
+            throw new Error('Network response was not ok');
+					}
+					return response.json();
+				})
+				.then(data => {
+					console.log('Success:', data);
+					displayNotification('Settings updated successfully', true); // Success notification
+				})
+				.catch((error) => {
+					console.error('Error:', error);
+					displayNotification('An error occurred while saving settings', false); // Error notification
+				});
+			});
+		</script>
+		<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/Off-Canvas-Sidebar-Drawer-Navbar-swipe.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/Off-Canvas-Sidebar-Drawer-Navbar-off-canvas-sidebar.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/Sidebar-Menu-sidebar.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/sidebartoggle.js') }}"></script>
+	</body>
+</html>
