@@ -11,3 +11,4 @@ validators==0.18.2
 Pillow==10.0.0
 python-magic==0.4.27
 requests==2.31.0
+python-dotenv==0.19.2
