@@ -15,6 +15,8 @@ services:
     restart: unless-stopped
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    env_file:
+      - config.env
   mongo:
     container_name: ${DOCKER_YTDLDB}
     image: mongo
@@ -27,12 +29,16 @@ services:
       options:
         max-size: "200m"
         max-file: "10"
+    env_file:
+      - config.env
   redis:
     image: redis
     container_name: ${DOCKER_YTDLREDIS}
     ports:
       - "${DOCKER_PORT_YTDLREDIS}:6379"
     restart: unless-stopped
+    env_file:
+      - config.env
   meilisearch:
     image: getmeili/meilisearch:v1.4
     container_name: ${DOCKER_YTDLMEILI}
@@ -43,3 +49,5 @@ services:
       - /t/vdm/meili:/meili_data # this is T:\vdm\meili in Windows
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    env_file:
+      - config.env
