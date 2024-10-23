@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <title>video player</title>
+  <style type="text/css">
+    video {
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+    }
+  </style>
+  <video controls>
+    <source src="{{ url_for('serve_data', filename=video.filename) }}" type="{{ content_type }}">
+    Your browser does not support video
+  </video>
+</body>
+</html>
