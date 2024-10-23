@@ -7,18 +7,29 @@ services:
       - "${DOCKER_PORT_YTDL}:5000"
     volumes:
       - .:/app
+      - /mnt/Yellow/docker/anomaly-ytdlp:/storage/yellow
+      - /mnt/E/docker/anomaly-ytdlp:/storage/white
+      # - /mnt/Purple/docker/anomaly-ytdlp:/storage/purple
+      # if .:/app is same as /mnt/storage then don't add /mnt/storage
     depends_on:
       - mongo
       - redis
+      - meilisearch
     restart: unless-stopped
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
   mongo:
     container_name: ${DOCKER_YTDLDB}
     image: mongo
+    command: ["mongod", "--logpath", "/var/log/mongodb/mongod.log", "--logappend", "--quiet"]
     ports:
       - "${DOCKER_PORT_YTDLDB}:27017"
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "200m"
+        max-file: "10"
   redis:
     image: redis
     container_name: ${DOCKER_YTDLREDIS}
@@ -32,6 +43,6 @@ services:
       - "${DOCKER_PORT_YTDLMEILI}:7700"
     restart: unless-stopped
     volumes:
-      - ./meili_data:/meili_data
+      - "${MEILILOC}:/meili_data"
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
