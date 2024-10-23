@@ -1,0 +1,143 @@
+.dropdown-item {
+	color: #fff!important;
+}
+
+.dropdown-menu {
+	background-color: #232628!important;
+}
+
+.btn, .btn:hover, .btn:active {
+	background-color: rgb(35,38,41)!important;
+}
+
+nav.navbar {
+	flex-grow: 1;
+}
+
+.navbar {
+	z-index: 1030;
+}
+
+.m-sidebar {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	top: 0;
+	left: -230px;
+	width: 230px;
+	transition: left 0.3s ease;
+	z-index: 1040;
+	height: 100vh;
+}
+
+@media (min-width: 992px) {
+	.m-sidebar {
+		left: 0;
+	}
+}
+
+@media (max-width: 992px) {
+	.m-sidebar {
+		width: 0;
+		margin-left: 20px;
+	}
+}
+
+.snavbar {
+	position: fixed;
+	height: calc(100% - 80px);
+}
+
+@media (max-width: 992px) {
+	.snavbar {
+		/*position: static;*/
+		width: auto;
+	}
+}
+
+.m-grid {
+	/*position: fixed;*/
+	width: calc(100% - 230px);
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+	margin-left: 220px;
+	margin-top: 80px;
+	/*overflow-y: auto;*/
+	transition: left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+	.m-grid {
+		margin-left: 20px;
+		margin-right: 20px;
+		width: 100%;
+	}
+}
+
+@media (min-width: 992px) {
+	.m-grid {
+		margin-left: 230px;
+	}
+}
+
+@media (max-width: 992px) {
+	.m-grid {
+		margin-left: 20px;
+		margin-right: 20px;
+		width: 100%;
+	}
+}
+
+#sidebarToggle {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1050;
+	cursor: pointer;
+	height: 100%;
+	width: 20px;
+	background: linear-gradient(to right, rgba(37,37,37,0.5), rgba(0,0,0,0));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/*margin-top: 80px;*/
+}
+
+#sidebarToggle::before {
+	content: '';
+	display: block;
+	border: solid white;
+	border-width: 0 3px 3px 0;
+	padding: 3px;
+	transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+	margin-left: -5px;
+	transition: transform 0.3s ease;
+}
+
+#sidebarToggle:hover {
+	background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0));
+}
+
+#sidebarToggle.open::before {
+	transform: rotate(-225deg);
+}
+
+@media (min-width: 992px) {
+	#sidebarToggle {
+		display: none;
+	}
+}
+
+.divnav {
+	height: 100vh;
+	margin-top: 80px;
+}
+
+@media (max-width: 428px) {
+	.divnav {
+		margin-top: 120px;
+	}
+}
+

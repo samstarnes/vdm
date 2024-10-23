@@ -12,3 +12,12 @@ padding-top: 56.25%; /* 16:9 Aspect Ratio */
 background-position: center center; 
 }
 .resultsContainer{background:rgb(15,15,15,1);}
+.result-container {display: flex;align-items: center;padding: 10px;border-radius: 5px;margin-bottom: 10px;}
+.thumbnail {width: 100px;height: 70px;
+object-fit: cover; /* Ensures the image is cropped to fit */
+margin-right: 10px;
+}
+.result-link {color: white;text-decoration: none;font-size: 16px;
+flex: 1; /* Ensures the link takes up the remaining space */
+}
+.result-link:hover {text-decoration: underline;}
