@@ -1330,6 +1330,8 @@ def download(url, args, cutout, output_base):
             '--print-json',
             '--cookies', 'cookies.txt',
             '--yes-playlist',
+            '--windows-filenames', # Force filenames to be Windows-compatible
+            '--trim-filenames 50', # Limit the filename length (excluding extension) to the specified number of characters
             url
         ]
         info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
@@ -1381,7 +1383,6 @@ def download(url, args, cutout, output_base):
             output = sanitize_filename(output_base) + f"_{index + 1}_" + info['id'] # custom output names from form
             logging.warning('Step 04: Setting output to output_base')
             logging.info('Step 04: P4')
-
 
         #############################################################
         # Step 05 ###################################################
