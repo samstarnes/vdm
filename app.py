@@ -1093,7 +1093,7 @@ def get_video_extension(directory, output):
 def is_image_corrupted(image_path):
     try:
         img = Image.open(image_path)
-        img.verify()  # verify that it is, in fact an image
+        img.verify()  # verify that it is, in fact, an image
         return False
     except (IOError, SyntaxError) as e:
         return True
@@ -1339,7 +1339,7 @@ def download(url, args, cutout, output_base):
         if not info_result:
             logging.error(f"yt-dlp returned an empty result for URL {url}. stderr: {err}")
             return None, f"Download failed for URL {url}. Error: Empty result received from yt-dlp"
-        info_list = [json.loads(line) for line in infor_result.splitlines() if line.strip()]
+        info_list = [json.loads(line) for line in info_result.splitlines() if line.strip()]
         if not info_list:
             logging.error(f"No valid video info found for URL {url}")
             return None, f"Download failed for URL {url}. Error: No valid video information found"
