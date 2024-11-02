@@ -49,7 +49,12 @@ Write-Host $randomKeyHex
 #### 4) Build and run docker container: `docker-compose up --build` 
 - Or for a detached container `docker-compose up -d --build`
 
-## Appearance (WIP - will change over time)
+> [!WARNING]
+> The security and safety of your server cannot be guaranteed. I am unable to secure all aspects independently.<br>
+> Running this application locally is generally safe (no open ports, no reverse proxy, and not exposed to the internet), provided you trust users on your local area network (LAN).<br><br>
+> As of October 31, 2024, a significant security breach was attempted; however, due to the nature of the attack, the intruder was unable to escape the container.<br><br>
+> The attacker exploited a vulnerability in an outdated ffmpeg binary, enabling remote code execution (RCE) through base64-encoded commands embedded in an .mkv video file. Importantly, no modifications were made to my production server—only four additional files (including one .mkv video) were added.<br><br>
+> The ffmpeg and ffprobe binaries have been updated to 6.1. Overall, the system remains secure. (24.11.02)
 
 ![Full Page](https://s.0x0.la/4iywiu)
 ![Embeds for videos](https://0x0.la/i/2023/12/17-12.36-btrz.png)
@@ -101,4 +106,4 @@ Write-Host $randomKeyHex
 - N/A
 
 ### Personal Note
-I've already used this for over 2000+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
+I've already used this for over 3500+ videos and it's worked so far. There may be changes in the future with the data structure so it may not work from one version to another (*highly unlikely*). I will attempt to include all changes and commands available to update the data if breaking changes are necessary.
