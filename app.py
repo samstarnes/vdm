@@ -191,15 +191,16 @@ VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'flv', 'mov', 'avi', 'wmv'] # video ex
 os.makedirs('/app', exist_ok=True) # Create a directory for the executables if it doesn't exist
 urllib.request.urlretrieve('https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp', '/app/yt-dlp') # Download yt-dlp
 os.chmod('/app/yt-dlp', 0o755) # Make yt-dlp executable
-urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffmpeg-4.4.1-linux-64.zip', '/app/ffmpeg-4.4.1-linux-64.zip') # Download and extract ffmpeg
-with zipfile.ZipFile('/app/ffmpeg-4.4.1-linux-64.zip', 'r') as zip_ref:
+urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip', '/app/ffmpeg-6.1-linux-64.zip') # Download and extract ffmpeg
+with zipfile.ZipFile('/app/ffmpeg-6.1-linux-64.zip', 'r') as zip_ref:
     zip_ref.extractall('/app')
-os.remove('/app/ffmpeg-4.4.1-linux-64.zip')
+os.remove('/app/ffmpeg-6.1-linux-64.zip')
 os.chmod('/app/ffmpeg', 0o755) # Make ffmpeg executable
-urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffprobe-4.4.1-linux-64.zip', '/app/ffprobe-4.4.1-linux-64.zip') # Download and extract ffprobe
-with zipfile.ZipFile('/app/ffprobe-4.4.1-linux-64.zip', 'r') as zip_ref:
+
+urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-64.zip', '/app/ffprobe-6.1-linux-64.zip') # Download and extract ffprobe
+with zipfile.ZipFile('/app/ffprobe-6.1-linux-64.zip', 'r') as zip_ref:
     zip_ref.extractall('/app')
-os.remove('/app/ffprobe-4.4.1-linux-64.zip')
+os.remove('/app/ffprobe-6.1-linux-64.zip')
 os.chmod('/app/ffprobe', 0o755) # Make ffprobe executable
 login_manager = LoginManager() # Set up Flask-Login
 login_manager.init_app(app)
