@@ -1,495 +1,636 @@
 <!DOCTYPE html>
 <html lang="en" style="background: #171717;">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-		<title>VDM/Video Download Manager</title>
-		<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
-		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-		<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
-		<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta property="og:locale" content="en_US" />
-		<meta property="og:site_name" content="VDM - Video Download Manager" />
-	</head>
-	<body style="background: #171717;overflow-x: hidden;">
-		<nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
-			<div class="container">
-				<a class="navbar-brand d-flex align-items-center" href="/">
-					<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
-						<i class="material-icons">video_library</i>
-					</span>
-					<span style="color: rgb(255,255,255);font-size: 25px;">
-						<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
-					</span>
-				</a>
-				<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
-					<span class="visually-hidden">Toggle navigation</span>
-					<span class="navbar-toggler-icon"></span>
-				</button>
-				<div class="collapse navbar-collapse" id="navcol-5">
-					<ul class="navbar-nav ms-auto">
-						<li class="nav-item">
-							<a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
-							<div id="user-info">
-								<span id="username" style="display: none;">
-									<a href="#" id="username-link"></a>
-									<div id="user-menu" style="display: none;">
-										<a href="#">Settings</a>
-										<a href="/logout" id="logout-link"><s>Logout</s></a>
-									</div>
-								</span>
-							</div>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
-						</li>
-					</ul>
-				</div>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+	<title>VDM/Video Download Manager</title>
+	<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/options.js') }}"></script>
+	<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/dial.css') }}">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta property="og:locale" content="en_US">
+	<meta property="og:site_name" content="VDM - Video Download Manager">
+</head>
+<body style="background: #171717;overflow-x: hidden;">
+	<nav class="navbar navbar-expand-md bg-dark navbar-dark py-3" style="background:#0e0e0e;">
+		<div class="container">
+			<a class="navbar-brand d-flex align-items-center" href="/">
+				<span class="d-flex justify-content-center align-items-center bs-icon-sm bs-icon-rounded bs-icon-primary me-2 bs-icon" style="background:#990000;">
+					<i class="material-icons">video_library</i>
+				</span>
+				<span style="color:rgb(255,255,255);font-size:25px;">
+					<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
+				</span>
+			</a>
+			<button data-bs-toggle="collapse" data-bs-target="#navcol-5" class="navbar-toggler">
+				<span class="visually-hidden">Toggle navigation</span>
+				<span class="navbar-toggler-icon">
+				</span>
+			</button>
+			<div class="collapse navbar-collapse" id="navcol-5">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item"><a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a></li>
+					<li class="nav-item"><a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
+						<div id="user-info"><span id="username" style="display:none;"><a href="#" id="username-link"></a><div id="user-menu" style="display:none;"><a href="#">Settings</a><a href="/logout" id="logout-link"><s>Logout</s></a></div></span></div>
+					</li>
+					<li class="nav-item"><a class="nav-link" href="/register" id="login-link"><s>Register</s></a></li>
+				</ul>
 			</div>
-		</nav>
-		<div class="container" style="color: rgb(255,255,255);">
-			<div class="row">
-				<div class="col-xxl-5" style="padding-top: 20px;padding-bottom: 20px;text-align: center;">
-					<form id="download-form">
-						<div>
-							<label class="form-label" for="url">Enter Video URL(s):</label>
-							<br>
-							<textarea id="url" name="url" rows="10" cols="50" placeholder="Enter one URL per line" style="text-align: left;width:80%"></textarea>
-						</div>
-					</div>
-					<div class="col" style="padding-top: 20px;padding-bottom: 20px;">
-						<div>
-							<div><label class="form-label" for="args">Custom Arguments:</label><br>
-								<input type="text" id="args" name="args" placeholder="Enter optional arguments" style="width: 100%;">
-							</div>
-							<div><label class="form-label" for="cutout">Timestamped Cutout (start-end):</label><br>
-								<input type="text" id="cutout" name="cutout" placeholder="Enter start &amp; end times for cutout" style="width: 100%;">
-							</div>
-							<div><label class="form-label" for="output">Output File Name:</label><br>
-								<input type="text" id="output" name="output" placeholder="Enter optional filename" style="width: 100%;">
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row font-monospace" style="padding-top: 15px;padding-bottom: 15px;">
-				<div class="col">
-					<div style="text-align: center;">
-						<button class="btn" type="submit" style="width: 50%;background: #252525;color: rgb(255,255,255);font-size: 25px;font-weight: bold;border-radius: 100px;border: 2px solid #0e0e0e;text-shadow: 0px 0px 15px rgb(0,0,0);">
-							Download
-						</button>
-						<div class="font-monospace text-center" id="status" style="color: rgb(255,255,255);font-size: 20px;"></div>
-					</div>
-				</div>
-			</div>
-		</form>
-		<div id="progress-bar" style="width: 0%; height: 30px; background-color: #4CAF50;">
-			<div id="progress-info" style="position: absolute; width: 100%; text-align: center; color:rgb(255,255,255,1);background-color:rgb(45,45,45,1);"></div>
 		</div>
-		<hr style="color: #bababa;border-bottom: 2px solid #bababa;">
-		<div class="row" style="text-align: center;padding-bottom: 20px;">
-			<div class="col">
-				<div><span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
-					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<div class="dropdown">
-						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">Sort By</button>
-						<div class="dropdown-menu dropdown-menu-dark">
-							<a class="dropdown-item" href="#">Name</a>
-							<a class="dropdown-item" href="#">File Size</a>
-							<a class="dropdown-item" href="#">Duration</a>
-							<a class="dropdown-item" href="#">Download Date</a>
-							<a class="dropdown-item" href="#">Upload Date</a>
+	</nav>
+	<div class="container" style="color: rgb(255,255,255);overflow-x: hidden;">
+		<div class="row d-xxl-flex justify-content-xxl-center align-items-xxl-center">
+			<div class="col-12">
+				<div class="row">
+					<div class="col" style="text-align: center;padding-bottom: 20px;padding-top: 20px;">
+						<form id="download-form" method="post" action="/download" onsubmit="return validateForm()">
+							<div>
+								<label class="form-label" for="url">
+									Enter Video URL(s):</label>
+								<br>
+								<textarea cols="50" id="url" name="url" placeholder="Enter one URL per line" rows="10" style="text-align:left;width:80%;" required></textarea>
+								</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 d-flex justify-content-center align-items-center" style="padding-top:20px;padding-bottom:20px;">
+					<div class="row" style="width: 100%;">
+						<div class="col-12" style="background: rgb(45,45,45);">
+							<button class="font-monospace d-xxl-flex justify-content-xxl-center align-items-xxl-center" id="toggleAdvancedOptions" type="button" style="width: 100%;font-style: italic;background: rgb(45,45,45);color: rgb(225,225,225);border-top-style: none;border-right-style: none;border-bottom-style: none;border-left-style: none;">
+								Hide/Unhide Advanced Options
+							</button>
+						</div>
+						<div class="col">
+							<div class="text-center cusArgs" id="advancedOptions">
+								<div class="row" style="border-bottom-style: solid;border-bottom-color: rgb(55,55,55);">
+									<div class="col-12">
+										<label class="col-form-label fs-5" for="args">
+											Custom Arguments:
+										</label>
+									</div>
+								</div>
+								<div class="row" style="border-bottom-style: solid;border-bottom-color: rgb(55,55,55);">
+									<div class="col-6 d-flex d-sm-flex justify-content-center align-items-center justify-content-sm-center align-items-sm-center" style="border-right-style: solid;border-right-color: rgb(55,55,55);">
+										<p>
+											<span style="color: rgb(240, 246, 252); background-color: transparent;">
+												Convert video to mp3
+											</span><br>
+											<span style="color: rgb(240, 246, 252); background-color: transparent;">
+												[won't save to dB, will only output .mp3]
+											</span>
+										</p>
+									</div>
+									<div class="col d-flex d-sm-flex justify-content-center align-items-center justify-content-sm-center align-items-sm-center">
+										<div class="form-check form-switch form-check-inline">
+											<input class="form-check-input" type="checkbox" id="extractAudioToggle" name="extractAudio">
+											<label class="form-check-label" for="extractAudioToggle">-x (--extract-audio)</label>
+										</div>
+									</div>
+								</div>
+								<div class="row" style="border-bottom-style: solid;border-bottom-color: rgb(55,55,55);">
+									<div class="col-6 d-flex d-sm-flex justify-content-center align-items-center justify-content-sm-center align-items-sm-center" style="border-right-style: solid;border-right-color: rgb(55,55,55);">
+										<p>Download only the video, if the URL refers to a video and a playlist</p>
+									</div>
+									<div class="col d-flex d-sm-flex justify-content-center align-items-center justify-content-sm-center align-items-sm-center">
+										<div class="form-check form-switch form-check-inline">
+											<input class="form-check-input" type="checkbox" id="noPlaylistToggle" name="noPlaylist">
+											<label class="form-check-label" for="noPlaylistToggle">--no-playlist</label>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col">
+										<label class="col-form-label fs-5" for="cutout">Timestamped Cutout (start-end):</label>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-12">
+										<div class="row">
+											<div class="col d-xxl-flex justify-content-xxl-center align-items-xxl-center">
+												<div class="form-check form-switch form-check-inline">
+													<input class="form-check-input" type="checkbox" id="clipToggle" name="clipEnabled">
+													<label class="form-check-label" for="clipToggle">Clip</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-sm-12 col-md-6 col-lg-6 col-xl-6 col-xxl-6 d-flex d-xxl-flex justify-content-center align-items-center justify-content-xxl-center align-items-xxl-center">
+										<p class="text-center">Start clip at <strong><em>X</em></strong> seconds</p>
+									</div>
+									<div class="col">
+										<div class="dial-container">
+											<div>
+												<div class="number-picker-container">
+													<div class="number-picker">
+														<div class="picker-label">Hours</div>
+														<input type="number" id="hours" min="0" max="23" value="0">
+													</div>
+													<div class="number-picker">
+														<div class="picker-label">Minutes</div>
+														<input type="number" id="minutes" min="0" max="59" value="0">
+													</div>
+													<div class="number-picker">
+														<div class="picker-label">Seconds</div>
+														<input type="number" id="seconds" min="0" max="59" value="0">
+													</div>
+												</div>
+												<div id="result"></div>
+											</div>
+										</div>
+									</div>
+									<div class="col-sm-12 col-md-6 col-lg-6 col-xl-6 col-xxl-6 text-center d-flex d-xxl-flex justify-content-center align-items-center justify-content-xxl-center align-items-xxl-center">
+										<p class="text-center">Clip next <strong><em>X</em></strong> seconds</p>
+									</div>
+									<div class="col d-xxl-flex justify-content-xxl-center align-items-xxl-center">
+										<div class="dial-container">
+											<div class="col d-xxl-flex justify-content-xxl-center align-items-xxl-center">
+												<div class="dial-container">
+													<div class="number-picker-container">
+														<div class="number-picker">
+															<div class="picker-label">Hours</div>
+															<input id="clipHours" type="number" min="0" max="23" value="0">
+														</div>
+														<div class="number-picker">
+															<div class="picker-label">Minutes</div>
+															<input id="clipMinutes" type="number" min="0" max="59" value="0">
+														</div>
+														<div class="number-picker">
+															<div class="picker-label">Seconds</div>
+															<input id="clipSeconds" type="number" min="0" max="59" value="10">
+														</div>
+													</div>
+													<div id="clipResult"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-12 row" id="clipDurationRow" style="display: none;">
+										<p id="clipDurationDisplay" class="text-center mb-0">
+											<br>
+											<span style="color: rgb(197, 200, 198); background-color: oklch(0.25 0.003 196.966);">
+												Clip Duration: 0h 0m 0s
+											</span>
+											<br><br>
+										</p>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+		</div>
+		<div class="row font-monospace" style="padding-top:15px;padding-bottom:15px;">
 			<div class="col">
-				<div>
-					<span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
-					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<form id="search-form" style="padding-bottom:15px;">
-					  <input type="search" id="search-input" class="searchbox"/>
-					</form>
-					<div id="resultsContainer" class="resultsContainer"></div>
-				</div>
+				<div style="text-align:center;">
+					<button class="btn" type="submit" style="width:50%;background:#252525;color:rgb(255,255,255);font-size:25px;font-weight:bold;border-radius:100px;border:2px solid #0e0e0e;text-shadow:0px 0px 15px rgb(0,0,0);">
+						Download
+					</button>
+				</form> <!-- end of form -->
+				<script>
+					function validateForm() {
+						const url = document.querySelector('textarea[name="url"]').value.trim();
+						if (!url) {
+							alert('Please enter a valid URL');
+							return false;
+						}
+						return true;
+					}
+				</script>
+				<div class="font-monospace text-center" id="status" style="color:rgb(255,255,255);font-size:20px;"></div>
 			</div>
-			<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
-			<script>
-        // Initialize the search bar with your specific settings
-				const meiliHostUrl = "{{ meilisearch_url }}"; 
-				const searchApiKey = "{{ search_api_key }}";
-        docsSearchBar.default({
-          hostUrl: meiliHostUrl,
-          apiKey: searchApiKey,
-          indexUid: 'yt-dlp_index',
-          inputSelector: '#search-input',
-          // Additional configuration...
-				});
-			</script>
-			<div class="col">
-				<div><span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
-					<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
-					<div class="dropdown">
-						<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button" id="items-per-page-button">20</button>
-						<div class="dropdown-menu dropdown-menu-dark" id="items-per-page-dropdown">
-							<a class="dropdown-item" href="?ipp=8">8</a>
-							<a class="dropdown-item" href="?ipp=20">20</a>
-							<a class="dropdown-item" href="?ipp=60">60</a>
-							<a class="dropdown-item" href="?ipp=100">100</a>
-							<a class="dropdown-item" href="?ipp=140">140</a>
-							<a class="dropdown-item" href="?ipp=200">200</a>
-							<a class="dropdown-item" href="?ipp=9999">9999</a>
-						</div>
+		</div>
+	</div>
+	<div id="progress-bar" style="width:0%;height:30px;background-color:#4CAF50;">
+		<div id="progress-info" style="position:absolute;width:100%;text-align:center;color:rgb(255,255,255,1);background-color:rgb(45,45,45,1);"></div>
+	</div>
+	<hr style="color: #bababa;border-bottom: 2px solid #bababa;">
+	<div class="row" style="text-align: center;padding-bottom: 20px;">
+		<div class="col">
+			<div>
+				<span style="color: rgb(255,255,255);font-size: 20px;">Sort by</span>
+				<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
+				<div class="dropdown">
+					<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button">
+						Sort By
+					</button>
+					<div class="dropdown-menu dropdown-menu-dark">
+						<a class="dropdown-item" href="#">Name</a>
+						<a class="dropdown-item" href="#">File Size</a>
+						<a class="dropdown-item" href="#">Duration</a>
+						<a class="dropdown-item" href="#">Download Date</a>
+						<a class="dropdown-item" href="#">Upload Date</a>
 					</div>
 				</div>
 			</div>
+		</div>
+		<div class="col">
+			<div>
+				<span style="color: rgb(255,255,255);font-size: 20px;">Search</span>
+				<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
+				<form id="search-form" style="padding-bottom:15px;">
+					<input type="search" id="search-input" class="searchbox"/>
+				</form>
+				<div id="resultsContainer" class="resultsContainer"></div>
+			</div>
+		</div>
+		<script src="https://cdn.jsdelivr.net/npm/docs-searchbar.js@latest/dist/cdn/docs-searchbar.min.js"></script>
+		<script>
+			// Initialize the search bar with your specific settings
+			const meiliHostUrl = "{{ meilisearch_url }}"; 
+			const searchApiKey = "{{ search_api_key }}";
+			docsSearchBar.default({
+				hostUrl: meiliHostUrl,
+				apiKey: searchApiKey,
+				indexUid: 'yt-dlp_index',
+				inputSelector: '#search-input',
+				// Additional configuration...
+			});
+		</script>
+		<div class="col">
+			<div>
+				<span style="color: rgb(255,255,255);font-size: 20px;">Items per page</span>
+				<hr style="margin-bottom: -10px;color: rgba(255,255,255,0);">
+				<div class="dropdown">
+					<button class="btn btn-secondary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" type="button" id="items-per-page-button">
+						20
+					</button>
+					<div class="dropdown-menu dropdown-menu-dark" id="items-per-page-dropdown">
+						<a class="dropdown-item" href="?ipp=8">8</a>
+						<a class="dropdown-item" href="?ipp=20">20</a>
+						<a class="dropdown-item" href="?ipp=60">60</a>
+						<a class="dropdown-item" href="?ipp=100">100</a>
+						<a class="dropdown-item" href="?ipp=140">140</a>
+						<a class="dropdown-item" href="?ipp=200">200</a>
+						<a class="dropdown-item" href="?ipp=9999">9999</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row" style="text-align: center;padding-bottom: 20px;">
+		<div class="col" style="font-size:20px;">
+			<!-- SkipPrevious and Previous page links -->
+			{% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
+			{% if p > 1 %}
+			<p>
+				<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
+				<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
+			</p>
+			<p><a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a></p>
+			{% endif %}
+			<!-- Ellipsis before page numbers if needed -->
+			{% if p > page_display_limit %}
+			<span>...</span>
+			{% endif %}
+			<!-- Page number links -->
+			{% set start_page = p - page_display_limit // 2 %}
+			{% if start_page < 1 %}
+			{% set start_page = 1 %}
+			{% endif %}
+			{% set end_page = start_page + page_display_limit - 1 %}
+			{% if end_page > total_pages %}
+			{% set end_page = total_pages %}
+			{% endif %}
+			{% for page in range(start_page, end_page + 1) %}
+			<a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
+			{% endfor %}
+			<!-- Ellipsis after page numbers if needed -->
+			{% if end_page < total_pages %}
+			<span>...</span>
+			{% endif %}
+			<!-- Next and SkipNext page links -->
+			{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
+			{% if p < total_pages %}
+			<p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
+			<p>
+				<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
+				<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
+			</p>
+			{% endif %}
+		</div>
+	</div>
+	<div class="container">
+		<div class="row row-cols-1 row-cols-md-4 g-4">
+			{% for video in videos %}
+			<div class="col">
+				<div class="card h-100">
+					<!-- Display the video thumbnail -->
+					<div class="thumbnail-wrapper" style="background-image: url('{{ url_for('serve_data', filename=video.tmbfp) }}'');"></div>
+					<div class="card-body">
+						<!-- Display the video title and link to the video -->
+						<h5 class="card-title">
+							<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
+						</h5>
+						<!-- Display other video data -->
+						<p class="card-text">Video ID: {{ video.id }}</p>
+						<p class="card-text">User: {{ video.user }}</p>
+						<p class="card-text">Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
+						<p class="card-text">Duration: {{ video.length }}</p>
+						<p class="card-text">File size (Bytes): {{ video.file_size_bytes }}</p>
+						<p class="card-text">File size (Readable): {{ video.file_size_readable }}</p>
+						<p class="card-text">Resolution: {{ video.resolution }}</p>
+						<p class="card-text">Aspect Ratio: {{ video.aspect_ratio }}</p>
+						<p class="card-text">mongoDB ID: {{ video._id }}</p>
+						<p class="card-text dirlink">Download Link: {{ video.filename }}</p>
+						<script>
+							var bdir = "{{ bdir }}" // passing base directory
+							function replaceSpacesWithNbsp(str) {
+								return str.replace(/ +/g, function(match) {
+									return Array(match.length + 1).join('&nbsp;');
+								});
+							}
+							document.addEventListener('DOMContentLoaded', function() {
+								var linkElements = document.querySelectorAll('.card-text.dirlink');
+								linkElements.forEach(function(linkElement) {
+									var fullPath = linkElement.textContent.replace('Download Link: ','').replace(bdir,'');
+									var linkPath = fullPath.substring(fullPath.indexOf('/data/'));
+									linkElement.innerHTML = 'Download Link: <a href="' + encodeURI(linkPath) + '">' + linkPath + '</a>';
+								});
+							});
+						</script>
+					</div>
+					<div class="card-footer">
+						<small class="text-muted">Download Date: {{ video.archive_date }}</small><br>
+						<small class="text-muted">Upload Date: {{ video.date_posted }}</small>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
 		</div>
 		<div class="row" style="text-align: center;padding-bottom: 20px;">
 			<div class="col" style="font-size:20px;">
-        <!-- SkipPrevious and Previous page links -->
-        {% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
-        {% if p > 1 %}
-				<p>
+				<!-- SkipPrevious and Previous page links -->
+				{% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
+				{% if p > 1 %}
+				<p>	
 					<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
 					<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
 				</p>
 				<p><a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a></p>
-        {% endif %}
-        <!-- Ellipsis before page numbers if needed -->
-        {% if p > page_display_limit %}
+				{% endif %}
+				<!-- Ellipsis before page numbers if needed -->
+				{% if p > page_display_limit %}
 				<span>...</span>
-        {% endif %}
-        <!-- Page number links -->
-        {% set start_page = p - page_display_limit // 2 %}
-        {% if start_page < 1 %}
+				{% endif %}
+				<!-- Page number links -->
+				{% set start_page = p - page_display_limit // 2 %}
+				{% if start_page < 1 %}
 				{% set start_page = 1 %}
-        {% endif %}
-        {% set end_page = start_page + page_display_limit - 1 %}
-        {% if end_page > total_pages %}
-          {% set end_page = total_pages %}
-					{% endif %}
-					{% for page in range(start_page, end_page + 1) %}
-          <a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
-					{% endfor %}
-					<!-- Ellipsis after page numbers if needed -->
-					{% if end_page < total_pages %}
-          <span>...</span>
-					{% endif %}
-					<!-- Next and SkipNext page links -->
-					{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
-					{% if p < total_pages %}
-          <p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
-          <p>
-            <a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
-            <a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
-					</p>
-					{% endif %}
-				</div>
+				{% endif %}
+				{% set end_page = start_page + page_display_limit - 1 %}
+				{% if end_page > total_pages %}
+				{% set end_page = total_pages %}
+				{% endif %}
+				{% for page in range(start_page, end_page + 1) %}
+				<a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
+				{% endfor %}
+				<!-- Ellipsis after page numbers if needed -->
+				{% if end_page < total_pages %}
+				<span>...</span>
+				{% endif %}
+				<!-- Next and SkipNext page links -->
+				{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
+				{% if p < total_pages %}
+				<p>
+					<p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
+					<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
+					<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
+				</p>
+				{% endif %}
 			</div>
-			<div class="container">
-				<div class="row row-cols-1 row-cols-md-4 g-4">
-					{% for video in videos %}
-					<div class="col">
-						<div class="card h-100">
-							<!-- Display the video thumbnail -->
-							<div class="thumbnail-wrapper" style="background-image: url({{ url_for('serve_data', filename=video.tmbfp) }});"></div>
-							<div class="card-body">
-								<!-- Display the video title and link to the video -->
-								<h5 class="card-title">
-									<a href="{{ url_for('video_page', video_id=video.id) }}">{{ video.title }}</a>
-								</h5>
-								<!-- Display other video data -->
-								<p class="card-text">Video ID: {{ video.id }}</p>
-								<p class="card-text">User: {{ video.user }}</p>
-								<p class="card-text">Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
-								<p class="card-text">Duration: {{ video.length }}</p>
-								<p class="card-text">File size (Bytes): {{ video.file_size_bytes }}</p>
-								<p class="card-text">File size (Readable): {{ video.file_size_readable }}</p>
-								<p class="card-text">Resolution: {{ video.resolution }}</p>
-								<p class="card-text">Aspect Ratio: {{ video.aspect_ratio }}</p>
-								<p class="card-text">mongoDB ID: {{ video._id }}</p>
-								<p class="card-text dirlink">Download Link: {{ video.filename }}</p>
-								<script>
-									var bdir = "{{ bdir }}" // passing base directory
-									function replaceSpacesWithNbsp(str) {
-										return str.replace(/ +/g, function(match) {
-											return Array(match.length + 1).join('&nbsp;');
-										});
-									}
-									document.addEventListener('DOMContentLoaded', function() {
-										var linkElements = document.querySelectorAll('.card-text.dirlink');
-										linkElements.forEach(function(linkElement) {
-											var fullPath = linkElement.textContent.replace('Download Link: ','').replace(bdir,'');
-											var linkPath = fullPath.substring(fullPath.indexOf('/data/'));
-											linkElement.innerHTML = 'Download Link: <a href="' + encodeURI(linkPath) + '">' + linkPath + '</a>';
-										});
-									});
-								</script>
-							</div>
-							<div class="card-footer">
-								<small class="text-muted">Download Date: {{ video.archive_date }}</small><br>
-								<small class="text-muted">Upload Date: {{ video.date_posted }}</small>
-							</div>
-						</div>
-					</div>
-					{% endfor %}
-				</div>
-				<div class="row" style="text-align: center;padding-bottom: 20px;">
-					<div class="col" style="font-size:20px;">
-						<!-- SkipPrevious and Previous page links -->
-						{% set skip_back = p - page_display_limit if p - page_display_limit > 1 else 1 %}
-						{% if p > 1 %}
-						<p>	
-							<a href="?p=1&ipp={{ ipp }}" style="font-size:17px;">First | </a>
-							<a href="?p={{ skip_back }}&ipp={{ ipp }}" style="font-size:17px;">⬅️ Backwards | </a>
-						</p>
-						<p><a href="?p={{ p - 1 }}&ipp={{ ipp }}">Previous [-1]</a></p>
-						{% endif %}
-						<!-- Ellipsis before page numbers if needed -->
-						{% if p > page_display_limit %}
-						<span>...</span>
-						{% endif %}
-						<!-- Page number links -->
-						{% set start_page = p - page_display_limit // 2 %}
-						{% if start_page < 1 %}
-						{% set start_page = 1 %}
-						{% endif %}
-						{% set end_page = start_page + page_display_limit - 1 %}
-						{% if end_page > total_pages %}
-							{% set end_page = total_pages %}
-							{% endif %}
-							{% for page in range(start_page, end_page + 1) %}
-							<a href="?p={{ page }}&ipp={{ ipp }}">{{ page }}</a>
-							{% endfor %}
-							<!-- Ellipsis after page numbers if needed -->
-							{% if end_page < total_pages %}
-							<span>...</span>
-							{% endif %}
-							<!-- Next and SkipNext page links -->
-							{% set skip_forward = p + page_display_limit if p + page_display_limit < total_pages else total_pages %}
-							{% if p < total_pages %}
-							<p>
-								<p><a href="?p={{ p + 1 }}&ipp={{ ipp }}">[+1] Next | </a></p>
-								<a href="?p={{ skip_forward }}&ipp={{ ipp }}">Forwards ➡️ | </a>
-								<a href="?p={{ total_pages }}&ipp={{ ipp }}" style="font-size:17px;">Last</a>
-							</p>
-							{% endif %}
-						</div>
-					</div>
-				</div>
-				<!-- ############### Javascript begins here ############### --> 
-				<script>
-					document.addEventListener('DOMContentLoaded', function () {
-						// This function is called when the DOM is fully loaded
-						// Get the input element and the results container
-						const searchInput = document.getElementById('search-input');
-						const resultsContainer = document.getElementById('resultsContainer');
-						function search(query) {
-							// Clear previous results
-							resultsContainer.innerHTML = '';
-							// Send the search query to the backend
-							fetch('/search', {
-								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json'
-								},
-								body: JSON.stringify({ query: query }) // Send the query to your backend
-							})
-							.then(response => response.json())
-							.then(data => {
-								let isAlternate = false; // Flag for alternate background colors
-								// Handle the search results here
-								data.hits.forEach(hit => {
-									// Create a new div element for each result
-									var resultLink = document.createElement('a');
-									resultLink.textContent = hit.title; // Set the text to the title
-									resultLink.href = `/videos/${hit.primaryKey}`; // Set the href to video URL
-									resultLink.target = "_blank"; // Open in new tab
-									resultLink.style.width = '100%';
-									resultLink.style.display = 'inline-block';
-									resultLink.style.background = isAlternate ? 'rgb(15,15,15,1)' : 'rgb(40,40,40,1)';
-									// Add the result href and line break to the results
-									resultsContainer.appendChild(resultLink);
-									resultsContainer.appendChild(document.createElement('br'));
-									isAlternate = !isAlternate; // Toggle flag for next item
-								});
-							})
-							.catch(error => {
-								console.error('Error during search request:', error);
-							});
-						}
-						// Event listener for the input's input event
-						searchInput.addEventListener('input', function () {
-							// Get the current input value
-							var query = searchInput.value;
-							// If the query isn't empty, search; otherwise, clear the results
-							if (query.trim()) {
-								search(query);
-								} else {
-								resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
-							}
-						});
-					});
-				</script>
-				
-				<script>
-					$(document).ready(function(){
-						// Function to prefill the video URL and optionally submit the form
-						function prefillVideoUrlAndSubmit() {
-							const queryParams = new URLSearchParams(window.location.search);
-							const videoUrl = queryParams.get('videoUrl');
-							if (videoUrl) {
-								$('#url').val(decodeURIComponent(videoUrl));
-								
-								// Automatically submit the form if a video URL is provided
-								// Consider adding a slight delay if needed to ensure form is fully ready
-								setTimeout(function() {
-									$("#download-form").submit();
-								}, 500); // 500 milliseconds delay before submitting
-							}
+		</div>
+	</div>
+	<!-- ############### Javascript begins here ############### --> 
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			// This function is called when the DOM is fully loaded
+			// Get the input element and the results container
+			const searchInput = document.getElementById('search-input');
+			const resultsContainer = document.getElementById('resultsContainer');
+			function search(query) {
+				// Clear previous results
+				resultsContainer.innerHTML = '';
+				// Send the search query to the backend
+				fetch('/search', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ query: query }) // Send the query to your backend
+				})
+				.then(response => response.json())
+				.then(data => {
+					let isAlternate = false; // Flag for alternate background colors
+					// Handle the search results here
+					data.hits.forEach(hit => {
+						// Create a container for the result
+						var resultContainer = document.createElement('div');
+						resultContainer.className = 'result-container';
+						resultContainer.style.background = isAlternate ? 'rgb(15,15,15,1)' : 'rgb(40,40,40,1)';
+						
+						// Add the thumbnail
+						if (hit.tmbfp) { // Check if thumbnail exists
+							var thumbnail = document.createElement('img');
+							thumbnail.src = hit.tmbfp; // Set the src to the thumbnail URL
+							thumbnail.alt = "Thumbnail";
+							thumbnail.className = 'thumbnail'; // Add CSS class for styling
+							resultContainer.appendChild(thumbnail); // Append thumbnail to result container
 						}
 						
-						// Attach the form submission event handler
-						$("#download-form").on('submit', function(event){
-							event.preventDefault();
-							$("#status").html("Download started...");
-							$.post("/download", $(this).serialize(), function(data){
-								$("#status").html(data);
-							});
-						});
+						// Create a new anchor element for each result
+						var resultLink = document.createElement('a');
+						resultLink.textContent = hit.title; // Set the text to the title
+						resultLink.href = `/videos/${hit.primaryKey}`; // Set the href to video URL
+						resultLink.target = "_blank"; // Open in new tab
+						resultLink.className = 'result-link'; // Add CSS class for styling
 						
-						// Check for video URL query parameter and handle form prefilling/submission
-						prefillVideoUrlAndSubmit();
+						// Add the result link to the container
+						resultContainer.appendChild(resultLink);
+						
+						// Add the result container and a line break to the results
+						resultsContainer.appendChild(resultContainer);
+						resultsContainer.appendChild(document.createElement('br'));
+						
+						isAlternate = !isAlternate; // Toggle flag for next item
 					});
-				</script>
+				})
 				
-				<!-- <script>
-					$(document).ready(function(){
-					$("#download-form").on('submit', function(event){
-					event.preventDefault();
-					$("#status").html("Download started...");
-					$.post("/download", $(this).serialize(), function(data){
+				.catch(error => {
+					console.error('Error during search request:', error);
+				});
+			}
+			// Event listener for the input's input event
+			searchInput.addEventListener('input', function () {
+				// Get the current input value
+				var query = searchInput.value;
+				// If the query isn't empty, search; otherwise, clear the results
+				if (query.trim()) {
+					search(query);
+				} else {
+					resultsContainer.innerHTML = ''; // Clear the results if the search box is empty
+				}
+			});
+		});
+	</script>
+	
+	<script>
+		$(document).ready(function(){
+			// Function to prefill the video URL and optionally submit the form
+			function prefillVideoUrlAndSubmit() {
+				const queryParams = new URLSearchParams(window.location.search);
+				const videoUrl = queryParams.get('videoUrl');
+				if (videoUrl) {
+					$('#url').val(decodeURIComponent(videoUrl));
+					
+					// Automatically submit the form if a video URL is provided
+					// Consider adding a slight delay if needed to ensure form is fully ready
+					setTimeout(function() {
+						$("#download-form").submit();
+					}, 500); // 500 milliseconds delay before submitting
+				}
+			}
+			
+			// Attach the form submission event handler
+			$("#download-form").on('submit', function(event){
+				event.preventDefault();
+				$("#status").html("Download started...");
+				$.post("/download", $(this).serialize(), function(data){
 					$("#status").html(data);
-					});
-					});
-					});
-					</script>
-				-->
-				<script>
-					$(document).ready(function(){
-						// Check if the user is logged in
-						if (sessionStorage.getItem('username')) {
-							// If the user is logged in, hide the login link and show the username and user menu
-							$('#login-link').hide();
-							$('#username-link').text(sessionStorage.getItem('username'));
-							$('#username').show();
-						}
-						// Show the user menu when the username is clicked
-						$('#username-link').click(function(event){
-							event.preventDefault();
-							$('#user-menu').toggle();
-						});
-						// Handle the login form submission
-						$('#login-form').submit(function(event){
-							event.preventDefault();
-							$.post("/login", $(this).serialize(), function(data){
-								// If the login is successful, store the username in sessionStorage, hide the login link, and show the username and user menu
-								sessionStorage.setItem('username', $('#username-input').val());
-								$('#login-link').hide();
-								$('#username-link').text(sessionStorage.getItem('username'));
-								$('#username').show();
-							});
-						});
-						// Handle the logout link click
-						$('#logout-link').click(function(event){
-							event.preventDefault();
-							$.post("/logout", function(data){
-								// If the logout is successful, remove the username from sessionStorage, hide the username and user menu, and show the login link
-								sessionStorage.removeItem('username');
-								$('#username').hide();
-								$('#user-menu').hide();
-								$('#login-link').show();
-							});
-						});
-					});
-				</script>
-				<script>
-					var source = new EventSource("/stream");
-					source.onopen = function(event) {
-						console.log("Connection to server opened.");
-					};
-					source.addEventListener('download_progress', function(event) {
-						var data = JSON.parse(event.data);
-						console.log(data);
-						var progress = data.progress;
-						var total = data.total;
-						var speed = data.speed;
-						var eta = data.eta;
-						document.getElementById('progress-bar').style.width = progress + '%';
-						document.getElementById('progress-info').innerText = total + " " + speed;
-					});
-					source.onerror = function(event) {
-						console.error("Error occurred:", event);
-					};
-				</script>
-				<script>
-					document.addEventListener('DOMContentLoaded', function() {
-						var dropdownItems = document.querySelectorAll('#items-per-page-dropdown .dropdown-item');
-						var button = document.getElementById('items-per-page-button');
-						// Set the button's text from the cookie
-						var itemsPerPage = getCookie('ipp');
-						if (itemsPerPage) {
-							button.textContent = itemsPerPage;
-						}
-						// Add click event listeners to the dropdown items
-						dropdownItems.forEach(function(item) {
-							item.addEventListener('click', function(event) {
-								// Update the button's text
-								button.textContent = event.target.textContent;
-								// Store the selected value in a cookie
-								setCookie('ipp', event.target.textContent, 365);
-							});
-						});
-					});
-					// Function to set a cookie
-					function setCookie(name, value, days) {
-						var expires = "";
-						if (days) {
-							var date = new Date();
-							date.setTime(date.getTime() + (days*24*60*60*1000));
-							expires = "; expires=" + date.toUTCString();
-						}
-						document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-					}
-					// Function to get a cookie
-					function getCookie(name) {
-						var nameEQ = name + "=";
-						var ca = document.cookie.split(';');
-						for(var i=0;i < ca.length;i++) {
-							var c = ca[i];
-							while (c.charAt(0)==' ') c = c.substring(1,c.length);
-							if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-						}
-						return null;
-					}
-				</script>
-				<script>
-					document.getElementById('items-per-page-dropdown').addEventListener('click', function(event) {
-						if (event.target.tagName === 'A') {
-							var itemsPerPage = event.target.textContent;
-							var url = new URL(window.location.href);
-							url.searchParams.set('ipp', itemsPerPage);
-							window.location.href = url.toString();
-						}
-					});
-				</script>
-			</body>
-		</html>		
+				});
+			});
+			
+			// Check for video URL query parameter and handle form prefilling/submission
+			prefillVideoUrlAndSubmit();
+		});
+	</script>
+	
+	<!-- <script>
+	$(document).ready(function(){
+	$("#download-form").on('submit', function(event){
+	event.preventDefault();
+	$("#status").html("Download started...");
+	$.post("/download", $(this).serialize(), function(data){
+	$("#status").html(data);
+	});
+	});
+	});
+	</script>
+	-->
+	<script>
+		$(document).ready(function(){
+			// Check if the user is logged in
+			if (sessionStorage.getItem('username')) {
+				// If the user is logged in, hide the login link and show the username and user menu
+				$('#login-link').hide();
+				$('#username-link').text(sessionStorage.getItem('username'));
+				$('#username').show();
+			}
+			// Show the user menu when the username is clicked
+			$('#username-link').click(function(event){
+				event.preventDefault();
+				$('#user-menu').toggle();
+			});
+			// Handle the login form submission
+			$('#login-form').submit(function(event){
+				event.preventDefault();
+				$.post("/login", $(this).serialize(), function(data){
+					// If the login is successful, store the username in sessionStorage, hide the login link, and show the username and user menu
+					sessionStorage.setItem('username', $('#username-input').val());
+					$('#login-link').hide();
+					$('#username-link').text(sessionStorage.getItem('username'));
+					$('#username').show();
+				});
+			});
+			// Handle the logout link click
+			$('#logout-link').click(function(event){
+				event.preventDefault();
+				$.post("/logout", function(data){
+					// If the logout is successful, remove the username from sessionStorage, hide the username and user menu, and show the login link
+					sessionStorage.removeItem('username');
+					$('#username').hide();
+					$('#user-menu').hide();
+					$('#login-link').show();
+				});
+			});
+		});
+	</script>
+	<script>
+		var source = new EventSource("/stream");
+		source.onopen = function(event) {
+			console.log("Connection to server opened.");
+		};
+		source.addEventListener('download_progress', function(event) {
+			var data = JSON.parse(event.data);
+			console.log(data);
+			var progress = data.progress;
+			var total = data.total;
+			var speed = data.speed;
+			var eta = data.eta;
+			document.getElementById('progress-bar').style.width = progress + '%';
+			document.getElementById('progress-info').innerText = total + " " + speed;
+		});
+		source.onerror = function(event) {
+			console.error("Error occurred:", event);
+		};
+	</script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			var dropdownItems = document.querySelectorAll('#items-per-page-dropdown .dropdown-item');
+			var button = document.getElementById('items-per-page-button');
+			// Set the button's text from the cookie
+			var itemsPerPage = getCookie('ipp');
+			if (itemsPerPage) {
+				button.textContent = itemsPerPage;
+			}
+			// Add click event listeners to the dropdown items
+			dropdownItems.forEach(function(item) {
+				item.addEventListener('click', function(event) {
+					// Update the button's text
+					button.textContent = event.target.textContent;
+					// Store the selected value in a cookie
+					setCookie('ipp', event.target.textContent, 365);
+				});
+			});
+		});
+		// Function to set a cookie
+		function setCookie(name, value, days) {
+			var expires = "";
+			if (days) {
+				var date = new Date();
+				date.setTime(date.getTime() + (days*24*60*60*1000));
+				expires = "; expires=" + date.toUTCString();
+			}
+			document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+		}
+		// Function to get a cookie
+		function getCookie(name) {
+			var nameEQ = name + "=";
+			var ca = document.cookie.split(';');
+			for(var i=0;i < ca.length;i++) {
+				var c = ca[i];
+				while (c.charAt(0)==' ') c = c.substring(1,c.length);
+				if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+			}
+			return null;
+		}
+	</script>
+	<script>
+		document.getElementById('items-per-page-dropdown').addEventListener('click', function(event) {
+			if (event.target.tagName === 'A') {
+				var itemsPerPage = event.target.textContent;
+				var url = new URL(window.location.href);
+				url.searchParams.set('ipp', itemsPerPage);
+				window.location.href = url.toString();
+			}
+		});
+	</script>
+</body>
+</html>
