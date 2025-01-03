@@ -8,6 +8,7 @@ import time
 import json
 import magic
 import redis
+import shlex
 import shutil
 import inspect
 import difflib
@@ -23,6 +24,7 @@ import subprocess
 import validators
 import meilisearch
 import flask_login
+import unicodedata
 import urllib.request
 from PIL import Image
 from queue import Queue
@@ -74,6 +76,9 @@ conversion_lock = Lock() # Thread locking
 ffmpeg_lock = Lock() # Dedicated conversion lock for ffmpeg execution
 meilisearch_url = f'http://meilisearch:7700'
 pagedisplaylimit = os.getenv('PAGENUMDISPLAYLIMIT')
+intpath = '/app/data/public'
+temp_mp3 = f'{intpath}/temp_mp3'
+script_dir = os.path.dirname(os.path.realpath(__file__))
 UPLOAD_FOLDER = 'uploads' # For uploading backups back to mongodb
 ALLOWED_EXTENSIONS = {'zip'} # For uploading backups back to mongodb
 app = Flask(__name__, static_folder='static')
@@ -191,15 +196,16 @@ VIDEO_EXTENSIONS = ['mp4', 'mkv', 'webm', 'flv', 'mov', 'avi', 'wmv'] # video ex
 os.makedirs('/app', exist_ok=True) # Create a directory for the executables if it doesn't exist
 urllib.request.urlretrieve('https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp', '/app/yt-dlp') # Download yt-dlp
 os.chmod('/app/yt-dlp', 0o755) # Make yt-dlp executable
-urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffmpeg-4.4.1-linux-64.zip', '/app/ffmpeg-4.4.1-linux-64.zip') # Download and extract ffmpeg
-with zipfile.ZipFile('/app/ffmpeg-4.4.1-linux-64.zip', 'r') as zip_ref:
+urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffmpeg-6.1-linux-64.zip', '/app/ffmpeg-6.1-linux-64.zip') # Download and extract ffmpeg
+with zipfile.ZipFile('/app/ffmpeg-6.1-linux-64.zip', 'r') as zip_ref:
     zip_ref.extractall('/app')
-os.remove('/app/ffmpeg-4.4.1-linux-64.zip')
+os.remove('/app/ffmpeg-6.1-linux-64.zip')
 os.chmod('/app/ffmpeg', 0o755) # Make ffmpeg executable
-urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.4.1/ffprobe-4.4.1-linux-64.zip', '/app/ffprobe-4.4.1-linux-64.zip') # Download and extract ffprobe
-with zipfile.ZipFile('/app/ffprobe-4.4.1-linux-64.zip', 'r') as zip_ref:
+
+urllib.request.urlretrieve('https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-64.zip', '/app/ffprobe-6.1-linux-64.zip') # Download and extract ffprobe
+with zipfile.ZipFile('/app/ffprobe-6.1-linux-64.zip', 'r') as zip_ref:
     zip_ref.extractall('/app')
-os.remove('/app/ffprobe-4.4.1-linux-64.zip')
+os.remove('/app/ffprobe-6.1-linux-64.zip')
 os.chmod('/app/ffprobe', 0o755) # Make ffprobe executable
 login_manager = LoginManager() # Set up Flask-Login
 login_manager.init_app(app)
@@ -306,7 +312,8 @@ def reindex_meilisearch_data():
                 'date_posted': video_info.get('date_posted', ''),
                 'archive_date': video_info.get('archive_date', '').isoformat() if isinstance(video_info.get('archive_date'), datetime) else video_info.get('archive_date', ''),
                 'user': video_info.get('user', ''),
-                'video_url': video_info.get('video_url', '')
+                'video_url': video_info.get('video_url', ''),
+                'tmbfp': video_info.get('tmbfp', '')
             }
             documents.append(doc)
         mheaders = {
@@ -379,6 +386,7 @@ def process_and_add_to_meilisearch():
                 meili_archivedate = meili_archivedate.isoformat()
             meili_user = video_info.get('user', '')
             meili_url = video_info.get('video_url', '')
+            meili_tmbfp = video_info.get('tmbfp', '')
             doc = {  # Preparing the document for MeiliSearch
                 'id': video_info['index'],
                 'primaryKey': video_info['id'],
@@ -387,6 +395,7 @@ def process_and_add_to_meilisearch():
                 'archive_date': meili_archivedate,
                 'user': meili_user,
                 'video_url': meili_url,
+                'tmbfp': meili_tmbfp
             }
             logging.info(f'Document to add to MeiliSearch: {doc}')
             mheaders = {
@@ -397,6 +406,11 @@ def process_and_add_to_meilisearch():
             mresponse = requests.post(add_documents_endpoint, headers=mheaders, data=json.dumps([doc]))
             if mresponse.status_code == 202:
                 logging.info(f'Documents added successfully: {mresponse.json()}')
+                # Mark the document as processed in MongoDB
+                collection.update_one({'id': video_info['id']}, {'$set': {'processed': True}})
+                processed_count += 1
+                percentage_completed = (processed_count / total_items) * 100
+                logging.info(f"MeiliSearch Progress: {percentage_completed:.2f}% of {processed_count}/{total_items}")
             else:
                 logging.error(f'Failed to add documents: {mresponse.content}')
                 if b'MDB_CORRUPTED' in mresponse.content:
@@ -405,12 +419,6 @@ def process_and_add_to_meilisearch():
                     handle_mdb_corrupted_error()
                     break  # Stop processing further to handle corruption
                 continue
-
-            # Mark the document as processed in MongoDB
-            collection.update_one({'id': video_info['id']}, {'$set': {'processed': True}})
-            processed_count += 1
-            percentage_completed = (processed_count / total_items) * 100
-            logging.info(f"MeiliSearch Progress: {percentage_completed:.2f}% of {processed_count}/{total_items}")
         except KeyError as e:
             logging.error(f"Key error: {str(e)} - some required video information is missing")
             logging.info(f"Failed video_info: {video_info}")
@@ -517,7 +525,7 @@ def convert_to_hls(video_id, input_filepath, max_retries=3):
             with ffmpeg_lock:
                 # Attempt to run ffmpeg with a timeout
                 logging.info(f"HLS: 03 Starting ffmpeg version for {video_id}")
-                subprocess.run(command, check=True, timeout=3600)
+                subprocess.run(command, check=True, timeout=7200)
                 logging.info(f"HLS: 03 ffmpeg command for video_id {video_id} completed successfully.")
                 break # Break out of the loop if unsuccessful
         except TimeoutExpired:
@@ -569,33 +577,27 @@ initialize_workers()
 def async_convert_to_hls(video_id, input_filepath):
     with conversion_lock:  # Acquire lock to check and update dictionary
         if video_id in ongoing_conversions:
-            logging.info(f"HLS: 12")
             printline(f"Conversion for video_id {video_id} is already in progress.")
             return
     # Add the task to the queue without holding the lock to avoid blocking
-    logging.info(f"HLS: 13")
     logging.info(f'HLS: 13.1 Adding to conversion queue video_id: {video_id}')
     conversion_queue.put((video_id, input_filepath))
     logging.info(f'HLS: 13.2 Task added to conversion queue video_id: {video_id}')
 
 @app.route('/serve_hls/<video_id>/<filename>')
 def serve_hls_segment(video_id, filename):
-    logging.info(f"HLS: 14")
     return send_from_directory(os.path.join(HLS_FILES_DIR, video_id), filename)
 
 @app.route('/serve_hls/<video_id>/<path:filename>')
 def serve_hls(video_id, filename):
-    logging.info(f"HLS: 15")
+    logging.info('Serving HLS segment for video_id: %s, filename: %s', video_id, filename)
     # Determine the full path to the requested file within the video_id directory
     file_path = os.path.join(HLS_FILES_DIR, video_id, filename)
     # Check if the requested file exists
     if not os.path.exists(file_path):
-        logging.info(f'Error serving HLS segment for video_id: {video_id}, filename: {filename}')
-        logging.info(f"HLS: 16")
+        logging.info('Error serving HLS segment for video_id: %s, filename: %s', video_id, filename)
         abort(404, description="File not found")
     # Serve the requested file
-    logging.info(f'Serving HLS segment for video_id: {video_id}, filename: {filename}')
-    logging.info(f"HLS: 17")
     return send_from_directory(os.path.join(HLS_FILES_DIR, video_id), filename)
 
 # Delivers /videos/ID video page for a single video (player)
@@ -603,39 +605,25 @@ def serve_hls(video_id, filename):
 def video_page(video_id):
     # Fetch the video data from MongoDB using the provided ID
     video = collection.find_one({"id": video_id})
-    logging.info(f"HLS: 18")
     logging.info('Loading video page for video_id: %s', video_id)
     if not video:
-        logging.info(f"HLS: 19")
         return "Video not found", 404
     # Fix data to pass to videos.html for <meta> tags
-    printline(f"route video_page before: {video['filename']}")
-    printline(f"route video_page before: {video['tmbfp']}")
-    logging.info(f"route video_page P1: {video['filename']}")
-    logging.info(f"route video_page P2: {video['tmbfp']}")
     video['filename'] = video['filename'].replace(docker_mainpath, '/app/')
     video['filename'] = video['filename'].replace('/appdata/public/', '/app/data/public/')
     video['filename'] = video['filename'].replace('/app/data/', 'data/')
     video['tmbfp'] = video['tmbfp'].replace('/data/data/public/', '/data/public/')
-    printline(f"route video_page after: {video['filename']}")
-    printline(f"route video_page after: {video['tmbfp']}")
-    logging.info(f"route video_page P3: {video['filename']}")
-    logging.info(f"route video_page P4: {video['tmbfp']}")
     # Construct the HLS playlist path
     hls_playlist_path = os.path.join(HLS_FILES_DIR, video_id, f'{video_id}.m3u8')
-    logging.info('hls_playlist_path: %s', hls_playlist_path)
-    logging.info(f"HLS: 20")
     # Check if the HLS playlist exists and is ready
     if os.path.exists(hls_playlist_path):
         # HLS playlist exists, render the video page directly
         playlist_url = url_for('serve_hls', video_id=video_id, filename=f'{video_id}.m3u8', _external=True)
-        logging.info(f'HLS: 21 video_page app route: choosing video.html')
+        logging.info('Serving video.html with HLS playlist URL')
         return render_template('video.html', video_id=video_id, video=video, bdir=bdir, hls_playlist=playlist_url)
     else:
         # HLS playlist does not exist, initiate conversion if not already in progress
-        logging.info(f"HLS: 22.0 Attempting to acquire lock for video_id {video_id}, {video['filename']}")
         with conversion_lock:
-            logging.info(f"HLS: 22.0 Lock acquired for video_id {video_id}")
             if video_id not in ongoing_conversions:
                 ongoing_conversions[video_id] = True
                 try:
@@ -1111,7 +1099,7 @@ def get_video_extension(directory, output):
 def is_image_corrupted(image_path):
     try:
         img = Image.open(image_path)
-        img.verify()  # verify that it is, in fact an image
+        img.verify()  # verify that it is, in fact, an image
         return False
     except (IOError, SyntaxError) as e:
         return True
@@ -1310,7 +1298,81 @@ def clean_and_load_json(filename):
         print(f"An error occurred while processing the file {filename}: {e}")
         return None
 
-def download(url, args, cutout, output_base):
+def validate_url(url):
+    # Remove any extra quotes from the URL
+    url = url.strip("'\"")
+    return validators.url(url)
+
+def build_yt_dlp_command(url, options, username=None, clean_filename=None):
+    yt_dlp_path = os.path.join(script_dir, 'yt-dlp')
+    """Build yt-dlp command with all possible options"""
+    # Determine output directory based on username or temp_mp3 for audio extraction
+    if options.get('extract_audio'):
+        output_dir = '/app/data/public/temp_mp3'
+    elif username and username != 'public':
+        output_dir = f'/app/data/private/{username}/videos'
+    else:
+        output_dir = f'{intpath}/videos'
+    # Use the clean_filename if available, otherwise default template
+    output_template = f'{output_dir}/{clean_filename}' if clean_filename else f'{output_dir}/%(title)s__%(id)s.%(ext)s'
+    command = [
+        yt_dlp_path,
+        '-f', 'bestvideo+bestaudio/best',
+        # '-o', f'{output_dir}/%(title)s__%(id)s.%(ext)s',
+        '-o', output_template,
+        '--cookies', 'cookies.txt',
+        '--progress-template', '{ "progress percentage":"%(progress._percent_str)s","progress total":"%(progress._total_bytes_str)s","speed":"%(progress._speed_str)s","ETA":"%(progress._eta_str)s" }',
+        '--force-overwrites',
+        '--restrict-filenames',
+    ]
+    # Handle no-playlist toggle
+    if options.get('no_playlist'):
+        command.append('--no-playlist')
+        logging.info("Removed --yes-playlist and added --no-playlist option")
+    else:
+        command.append('--yes-playlist')
+        logging.info("Defaulting to --yes-playlist")
+    # Add audio extraction if enabled
+    if options.get('extract_audio'):
+        command.extend(['-x', '--audio-format', 'mp3'])
+        logging.info("Added audio extraction options")
+    # Add URL last
+    command.append(url)
+    logging.info(f"Final command: {' '.join(command)}")
+    return command
+
+def process_clip(input_file, options, is_audio=False):
+    """Process clip using ffmpeg after download"""
+    cutout_start = options.get('cutout_start')
+    cutout_end = options.get('cutout_end')
+    if not cutout_start or not cutout_end:
+        logging.error('Missing clip start or end times')
+        return None
+    output_file = input_file.rsplit('.', 1)[0] + '_clipped.' + input_file.rsplit('.', 1)[1]
+    ffmpeg_command = [
+        'ffmpeg',
+        '-i', input_file,
+        '-ss', options['cutout_start'],
+        '-t', options['cutout_end']
+    ]
+    if is_audio:
+        ffmpeg_command.extend(['-c:a', 'copy'])
+    else:
+        ffmpeg_command.extend(['-c:v', 'copy', '-c:a', 'copy'])
+    ffmpeg_command.append(output_file)
+    logging.info(f"Running ffmpeg clip command: {' '.join(ffmpeg_command)}")
+    try:
+        logging.info(f"Running ffmpeg command: {' '.join(ffmpeg_command)}")
+        process = subprocess.run(ffmpeg_command, capture_output=True, text=True, check=True)
+        os.replace(output_file, input_file)  # Replace original with clipped version
+        return input_file
+    except subprocess.CalledProcessError as e:
+        logging.error(f"FFmpeg error: {e.stderr}")
+    except Exception as e:
+        logging.error(f"Unexpected error during clip processing: {str(e)}")
+    return None
+
+def download(url, extract_audio=False, no_playlist=False, clip_toggle=False, cutout_start=None, cutout_end=None):
     #############################################################
     # Step 01 ###################################################
     #############################################################
@@ -1326,12 +1388,20 @@ def download(url, args, cutout, output_base):
     #############################################################
     logging.info('Step 02: Grab yt-dlp and ffprobe paths, validate URLs')
     # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.realpath(__file__))
+    # script_dir = os.path.dirname(os.path.realpath(__file__))
+    logging.info('Step 02.1:')
     # Construct the full path to yt-dlp
     yt_dlp_path = os.path.join(script_dir, 'yt-dlp')
+    logging.info('Step 02.2:')
     ffprobe_path = os.path.join(script_dir, 'ffprobe')
-    if not validators.url(url):
+    logging.info('Step 02.3:')
+    logging.info(f'Step 02.3a: url: {url}')
+    logging.info(f'Step 02.3b: {validate_url(url)}')
+    url = url.strip("'\"")
+    if not validate_url(url):
+        logging.info('Step 02.4:')
         return 'Invalid URL', 400
+        logging.info('Step 02.5:')
 
     #############################################################
     # Step 03 ###################################################
@@ -1345,43 +1415,57 @@ def download(url, args, cutout, output_base):
             yt_dlp_path,
             '-f', 'bestvideo+bestaudio/best',
             '--skip-download',
+            '--yes-playlist',
+            '--restrict-filenames',
             '--print-json',
             '--cookies', 'cookies.txt',
-            url
+            url # Use the URL directly, without shlex.quote()
         ]
-        info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, text=True)
+        logging.info(f"Step 03.1: Command as array: {info_command}")
+        logging.info(f"Step 03.2: Command as string: {' '.join(info_command)}")
+        logging.info(f"Step 03.3: Creating subprocess with Popen")
+        info_process = subprocess.Popen(info_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        logging.info(f"Step 03.5: Subprocess created successfully")
+        logging.info(f"Step 03.6: Starting subprocess_communication")
         info_result, err = info_process.communicate()
+        logging.info(f"Step 03.7: Process return code: {info_process.returncode}")
+        logging.info(f"Step 03.8: stderr output length: {len(err) if err else 0}")
+        logging.info(f"Step 03.9: stdout output length: {len(err) if info_result else 0}")
     try:
+        if not info_result:
+            logging.error(f"yt-dlp returned an empty result for URL {url}. stderr: {err}")
+            return None, f"Step3.10: Download failed for URL {url}. Error: Empty result received from yt-dlp"
+        info_list = [json.loads(line) for line in info_result.splitlines() if line.strip()]
+        if not info_list:
+            logging.error(f"Step3.11: No valid video info found for URL {url}")
+            return None, f"Download failed for URL {url}. Error: No valid video information found"
         info = json.loads(info_result)
-        logging.info('Step 03: Set info variable in Step 3')
-    except json.JSONDecodeError:
-        printline('Line 1148: yt-dlp output is not valid JSON:', info_result)
-        logging.error(f'Step 03: Failed to download:` {url}')
-        return None, f"Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
+        logging.info('Step 03.12: Set info variable in Step 3')
+    except json.JSONDecodeError as e:
+        logging.error(f'Step 03.13: Failed to download:` {url}')
+        logging.error(f"Step 03.14: yt-dlp output is invalid JSON: {info_result}")
+        logging.error(f"Step 03.15: JSON decoding error: {str(e)}")
+        return None, f"Step3.16: Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
+    except ValueError as e:
+        logging.error(f"Step 03.17: {str(e)}")
+        return None, f"Step3.18: Download failed for URL {url}. Error: {str(e)}"
+    except Exception as e:
+        logging.error(f"Step 03.10: Unexpected error: {str(e)}")
+        return None, f"Step3.11: Download failed for URL {url}. Error: {str(e)}"
 
     #############################################################
     # Step 04 ###################################################
     #############################################################
-    logging.info('Step 04: Sanitize title and output as variable')
+    logging.info(f'Step 04: Sanitize title and output as variable for video')
     # Use the video title as the output name if no output name was provided
     if isinstance(info, dict) and 'title' in info:
         display_title = info['title']
         logging.info('Step 04: P1')
     else:
-        display_title = "Title not found"
+        display_title = f"Title not found for video"
         logging.info('Step 04: P2')
-    if not output_base:
-        output = sanitize_filename(info['title'])
-        fulltitle = output
-        output = sanitize_filename(info['title']) + "_" + info['id']
-        logging.info('Step 04: Set output variable')
-        logging.info('Step 04: P3')
-    else:
-        output = sanitize_filename(output_base) # custom output names from form
-        fulltitle = output
-        output = sanitize_filename(output_base) + "_" + info['id'] # custom output names from form
-        logging.warning('Step 04: Setting output to output_base')
-        logging.info('Step 04: P4')
+    output = sanitize_filename(info['title']) + info['id']
+    logging.info('Step 04: P4')
 
     #############################################################
     # Step 05 ###################################################
@@ -1400,10 +1484,47 @@ def download(url, args, cutout, output_base):
     #############################################################
     # Step 06 ###################################################
     #############################################################
-    logging.info('Step 07: Download video with yt-dlp')
+    logging.info('Step 06: Download video with yt-dlp')
     # Run yt-dlp to download the video (1/3 files)
+    
+    # If extract_audio is True, handle it separately and return early
+    # note to self
+    # if options['extract_audio']:
+        # try:
+            # Create a temporary directory for the download
+            # logging.info('Step 06.1: Extracting audio') 
+            # temp_mp3_dir = f'{intpath}/temp_mp3'
+            # os.makedirs(temp_mp3_dir, exist_ok=True)
+            # command = build_yt_dlp_command(urls[0], options)
+            # logging.info('Step 06.2: Running process')
+            # process = subprocess.run(command, capture_output=True, text=True, check=True)
+            # if process.returncode == 0:
+                # mp3_files = glob.glob(os.path.join(temp_mp3_dir, '*.mp3'))
+                # if not mp3_files:
+                    # logging.info('Step 06: E1')
+                    # raise FileNotFoundError("No MP3 file was created")
+                # mp3_file = mp3_files[-1]
+                # Handle clipping if enabled
+                # if options['clip_toggle']:
+                    # logging.info('Step 06.3: Processing clip')
+                    # mp3_file = process_clip(mp3_file, options, is_audio=True)
+                    # if not mp3_file:
+                        # logging.info('Step 06: E2')
+                        # return jsonify({'status': 'error', 'message': 'Failed to clip audio'}), 400
+                # Send the file immediately
+                # logging.info('Step 06.4: Returning file')
+                # return send_file(
+                    # mp3_file,
+                    # mimetype='audio/mpeg',
+                    # as_attachment=True,
+                    # download_name=os.path.basename(mp3_file)
+                # )
+        # except Exception as e:
+            # logging.error(f"Step 06.5: Error during audio extraction: {str(e)}")
+            # return jsonify({'status': 'error', 'message': str(e)}), 400
+    # logging.info('Step 06.9: End of the mess')
+    
     # Set Command 1 for Progress/DL of video
-    intpath = '/app/data/public'
     progresscmd = [
         yt_dlp_path,
         '-f', 'bestvideo+bestaudio/best',
@@ -1412,15 +1533,18 @@ def download(url, args, cutout, output_base):
         '--newline',
         '--progress-template', '{ "progress percentage":"%(progress._percent_str)s","progress total":"%(progress._total_bytes_str)s","speed":"%(progress._speed_str)s","ETA":"%(progress._eta_str)s" }',
         '--force-overwrites',
+        '--restrict-filenames',
+        '--yes-playlist',
         url
     ]
-    logging.info('Step 07: Set progresscmd')
-    if args and args[0] != '':
-        progresscmd.extend(args)
-    progresscutout = request.form['cutout'].split('-')
-    if len(progresscutout) == 2:  # Only add progresscutout args if two values are provided
-        progresscutout_args = f'"-ss {progresscutout[0]} -to {progresscutout[1]}"'
-        progresscmd.extend(['--postprocessor-args', progresscutout_args])
+    #logging.info('Step 07: Set progresscmd')
+    # progresscutstart = request.form['cutout_start']
+    # logging.info(f"Step 07.1: cutout start: {progresscutstart}")
+    # progresscutend = request.form['cutout_end']
+    # logging.info(f"Step 07.2: cutout end: {progresscutend}")
+    # progresscutout_args = f"-ss {progresscutstart} -to {progresscutend}"
+    # logging.info(f"Step 07.3: progresscutout_args: {progresscutout_args}")
+    # progresscmd.extend(['--postprocessor-args', progresscutout_args])
     # Set Command 2 for DL of JSON object
     printline(f"Step 07: ytdlp output path: {intpath}/videos/{output}.EXT")
     printline(f"Step 07: ytdlp output variable: {output}")
@@ -1432,6 +1556,7 @@ def download(url, args, cutout, output_base):
         '--cookies', 'cookies.txt',
         '--skip-download',
         '--force-overwrites',
+        '--yes-playlist',
         url
     ]
     logging.info('Step 07: Set jsoncmd')
@@ -1537,6 +1662,8 @@ def download(url, args, cutout, output_base):
         '--skip-download',
         '--write-thumbnail',
         '-o', f'{intpath}/thumbnails/{output}',
+        '--restrict-filenames',
+        '--yes-playlist',
         '--cookies', 'cookies.txt',
         url
     ]
@@ -1729,36 +1856,179 @@ def download(url, args, cutout, output_base):
     logging.info('Step 19: "Return"')
     return info, err
 
+def get_video_metadata(url):
+    """Fetch video metadata from yt-dlp."""
+    yt_dlp_path = os.path.join(script_dir, 'yt-dlp')
+    command = [
+            yt_dlp_path,
+            '-f', 'bestvideo+bestaudio/best',
+            '--skip-download',
+            '--yes-playlist',
+            '--restrict-filenames',
+            '--print-json',
+            '--cookies', 'cookies.txt',
+            url
+    ]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        metadata = json.loads(result.stdout)
+        return metadata
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to fetch metadata: {e.stderr}")
+        raise RuntimeError(f"Failed to fetch metadata: {e.stderr}")
+
+def generate_clean_filename(metadata, extension):
+    """
+    Generate a sanitized filename that is safe for all file systems.
+    Ensures compatibility with Windows, Linux, and other common file systems.
+    """
+    title = metadata['title']
+    video_id = metadata['id']
+    # Combine title and ID for the filename
+    raw_filename = f"{title}__{video_id}.{extension}"
+    logging.info(f"generate_clean_filename():1 {raw_filename}")
+    # Remove invalid characters for Windows and Linux
+    sanitized_filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', raw_filename)
+    logging.info(f"generate_clean_filename():2 {sanitized_filename}")
+    # Normalize Unicode to NFC (Normalization Form C)
+    sanitized_filename = unicodedata.normalize('NFC', sanitized_filename)
+    logging.info(f"generate_clean_filename():3 {sanitized_filename}")
+    # Replace spaces with underscores
+    sanitized_filename = sanitized_filename.replace(' ', '_')
+    logging.info(f"generate_clean_filename():4 {sanitized_filename}")
+    # Replace problematic sequences
+    sanitized_filename = sanitized_filename.replace('..', '_')  # Avoid ".." in filenames
+    logging.info(f"generate_clean_filename():5 {sanitized_filename}")
+    sanitized_filename = sanitized_filename.strip()  # Remove leading/trailing spaces
+    logging.info(f"generate_clean_filename():6 {sanitized_filename}")
+    # Enforce filename length limit (255 characters for most file systems)
+    max_length = 255 - len(extension) - 1  # Reserve space for the extension and dot
+    if len(sanitized_filename) > max_length:
+        sanitized_filename = sanitized_filename[:max_length]
+    return sanitized_filename
+
 @app.route('/download', methods=['POST'])
 def download_videos():
+    logging.info("download_videos() function called")
+    logging.info(f"download_videos(): Received form data: {request.form}")
     # Determine the directory to save the videos to based on the username
-    username = session.get('user_id')  # Use the get method to avoid a KeyError
-    if 'user_id' in session:
-        username = session['user_id']
-    else:
-        username = 'public'  # default value if user is not logged in
-    urls = [url.strip() for url in request.form['url'].split('\n')]
-    args = request.form['args'].split(' ')
-    # Get the path to the cookies file from the form
-    cookies_file_path = request.form.get('cookies_file', '')
-    # If no cookies file was provided, use the default cookies file
-    defcookiesfp = 'cookies.txt'
-    if not cookies_file_path:
-        cookiesfp = defcookiesfp
-    args.extend(['--cookies', cookiesfp])
-    cutout = request.form['cutout'].split('-')
-    output_base = request.form['output']
-    errors = []
+    username = session.get('user_id', 'public')  # Use the get method to avoid a KeyError
+    logging.info(f"download_videos():username:{username}")
+    urls = [url.strip().strip("'\"") for url in request.form['url'].split('\n') if url.strip()]
+    logging.info(f"urls: {urls}")
+    if not urls:
+        return "Please enter provide at least one valid URL", 400
+    
+    # Collect all options
+    options = {
+        'extract_audio': 'extractAudio' in request.form,
+        'no_playlist': 'noPlaylist' in request.form,
+        'clip_toggle': 'clipEnabled' in request.form,
+        'cutout_start': None,
+        'cutout_end': None
+    }
+
+    if options['clip_toggle']:
+        try:
+            options['cutout_start'] = f"{request.form.get('hours', '0').zfill(2)}:" \
+                                      f"{request.form.get('minutes', '0').zfill(2)}:" \
+                                      f"{request.form.get('seconds', '0').zfill(2)}"
+            options['cutout_end'] = f"{request.form.get('clipHours', '0').zfill(2)}:" \
+                                    f"{request.form.get('clipMinutes', '0').zfill(2)}:" \
+                                    f"{request.form.get('clipSeconds', '10').zfill(2)}"
+            logging.info(f"download_videos(): Clip timing: {options['cutout_start']} to {options['cutout_end']}")
+        except Exception as e:
+            logging.error(f"download_videos(): Error processing clip timing: {str(e)}")
+            return jsonify({'status': 'error', 'message': 'Invalid clip timing'}), 400
+    logging.info(f"download_videos(): Options configured: {options}")
+
     for url in urls:
-        printline('Starting download for URL:', url)
-        info, error = download(url, args, cutout, output_base)  # Get the info and error from the download function
-        if error:
-            errors.append(error)
-        printline('Download finished for URL:', url)
-    if errors:
-        return 'Download started. The following errors occurred:\n' + '\n'.join(str(errors))
-    else:
-        return 'Download started', 200
+        try:
+            # Fetch video metadata
+            metadata = get_video_metadata(url)
+            file_extension = "mp3" if options['extract_audio'] else metadata['ext']
+            clean_filename = generate_clean_filename(metadata, file_extension)
+            logging.info(f'download_videos(): Filename will be: {clean_filename}')
+            output_path = os.path.join(temp_mp3, clean_filename)
+            logging.info(f'download_videos(): Output path will be: {output_path}')
+            # Build and run  yt-dlp command
+            command = build_yt_dlp_command(url, options, username, clean_filename=clean_filename)
+            process = subprocess.run(command, capture_output=True, text=True, check=True)
+            # dlinfo, dlerror = download(url, extract_audio=False, no_playlist=False, clip_toggle=False, cutout_start=None, cutout_end=None)
+
+            # Handle audio extraction functionality
+            if options['extract_audio']:
+                # Locate the MP3 file generated by yt-dlp
+                audio_file = output_path.replace(f".{metadata['ext']}", ".mp3")
+                if not os.path.exists(audio_file):
+                    logging.error("download_videos(): No MP3 file was created.")
+                    return jsonify({
+                        'status': 'error', 
+                        'message': 'No MP3 file created'
+                    }), 400
+                output_path = audio_file
+
+            # Handle clip functionality
+            if options['clip_toggle']:
+                # Clip the file (audio or video) using FFmpeg
+                output_path = process_clip(output_path, options, is_audio=options['extract_audio'])
+                if not output_path:
+                    logging.error("download_videos(): ailed to process clip")
+                    return jsonify({'status': 'error', 'message': 'Failed to process clip'}), 400
+
+            # Ensure a file is ready to be sent back
+            if not output_path:
+                logging.error("download_videos(): No file to return")
+                return jsonify({'status': 'error', 'message': 'No file to return'}), 400
+            # Save the session
+            session['download_path'] = output_path
+            logging.info(f"download_videos(): File prepared for download: {output_path}")
+            return jsonify({
+                'status': 'success',
+                'message': 'File ready for download',
+                'download_url': '/fetch-file',
+                'download_filename': os.path.basename(output_path),
+                'full_path': output_path
+            }), 200
+        except subprocess.CalledProcessError as e:
+            logging.info(f'download_videos(): yt-dlp error: {e.stderr}')
+            return jsonify({
+                'status': 'error',
+                'message': 'Error in yt-dlp',
+                'message': e.stderr
+            }), 400
+        except Exception as e:
+            logging.info(f"download_videos(): Error processing URL {url}: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 400
+
+def fetch_file():
+    # Retrieve the file path from the session
+    output_path = session.get('download_path')
+    logging.info(f'fetch_file: output_path: {output_path}')
+    filename = session.get('download_filename')
+    logging.info(f'fetch_file: filename: {filename}')
+    if not output_path or not os.path.exists(output_path):
+        logging.info(f"fetch_file(): File not found or invalid path: {output_path}")
+        return jsonify({'status': 'error', 'message': 'File not found'}), 400
+    # Stream the file to the browser
+    try:
+        return send_file(
+            output_path,
+            #mimetype='application/octet-stream',
+            mimetype='audio/mpeg',
+            as_attachment=True,
+            download_name=filename
+        )
+        # Clear the session after serving the file
+        session.pop('download_path', None)
+        session.pop('download_filename', None)
+        
+    except Exception as e:
+        logging.error(f'Error serving file: {str(e)}')
+        return jsonify({'status': 'error', 'message': 'Error serving file'}), 500
 
 #def delete_old_files():
 #    while True:
@@ -1803,40 +2073,31 @@ def home():
     ipp = request.args.get('ipp', default=20, type=int)
     # Configurable number of page links to display or default to 10
     page_display_limit = int(pagedisplaylimit) if pagedisplaylimit is not None else 10
-
     # Calculate the total number of videos
     total_videos = collection.count_documents({})
     logger.info(f"Total videos in the collection: {total_videos}") # this is just debug material, will be removed
-
     # Calculate the total number of pages
     total_pages = (total_videos + ipp - 1) // ipp
-
     # Handle cases with no items in the database
     if total_videos == 0:
         total_pages = 1
-
     # Redirect to page 1 if the page number is less than 1
     if p < 1:
         logger.info(f"Page number {p} is less than 1, redirecting to page 1")
         return redirect(url_for('index', p=1, ipp=ipp))
-
     # Redirect to the last page if the page number is greater than total_pages
     if p > total_pages:
         logger.info(f"Page number {p} is greater than total pages {total_pages}, redirecting to the last page")
         return redirect(url_for('index', p=total_pages, ipp=ipp))
-
     offset = (p - 1) * ipp
-
     # Query MongoDB to get the video data
     videos = list(collection.find({}).skip(offset).limit(ipp))
     logger.info(f"Retrieved {len(videos)} videos for page {p}")
-
     # Modify the tmbfp attribute by removing "data/" prefix and replace special characters
     for video in videos:
         video['tmbfp'] = video['tmbfp'].replace('data/', '', 1) # removes the single data/ path so it works for the thumbnail, do not remove
         video['tmbfp'] = video['tmbfp'].replace('(', '%28').replace(')', '%29').replace('\\', '%5C') # replaces parentheses for url encoding
         video['tmbfp'] = unquote(video['tmbfp']) # may be possible to remove at this point
-
     # Pass the video data to the template
     directory = getattr(g, 'directory', None)
     search_api_key = get_meilisearch_public_key()
