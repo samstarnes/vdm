@@ -56,7 +56,7 @@ Write-Host $randomKeyHex
 > The attacker exploited a vulnerability in an outdated ffmpeg binary, enabling remote code execution (RCE) through base64-encoded commands embedded in an .mkv video file. Importantly, no modifications were made to my production server—only four additional files (including one .mkv video) were added.<br><br>
 > The ffmpeg and ffprobe binaries have been updated to 6.1. Overall, the system remains secure. (24.11.02)
 
-![Full Page](https://s.0x0.la/4iywiu)
+![Full Page](https://0x0.la/x/vdm.png)
 ![Embeds for videos](https://0x0.la/i/2023/12/17-12.36-btrz.png)
 
 
