@@ -12,3 +12,5 @@ Pillow==10.0.0
 python-magic==0.4.27
 requests==2.31.0
 python-dotenv==0.19.2
+Flask-Limiter==3.10.1
+Flask-WTF==1.2.2
