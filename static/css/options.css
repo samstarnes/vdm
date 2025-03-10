@@ -1,0 +1,42 @@
+div.picker-label {
+  color: rgb(225,225,225,1);
+}
+
+.number-picker-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  font-family: Arial, sans-serif;
+}
+
+.number-picker {
+  text-align: center;
+}
+
+.picker-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+input[type="number"] {
+  width: 60px;
+  height: 40px;
+  font-size: 18px;
+  text-align: center;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
