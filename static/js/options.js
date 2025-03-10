@@ -1,13 +1,18 @@
 function savePreference(key, value) {
+	console.log(`Saving preference: ${key} = ${JSON.stringify(value)}`);
 	localStorage.setItem(key, JSON.stringify(value));
 }
 
 function loadPreference(key, defaultValue) {
 	const value = localStorage.getItem(key);
-	return value !== null ? JSON.parse(value) : defaultValue;
+	const loadedValue = value !== null ? JSON.parse(value) : defaultValue;
+	console.log(`Loading preference: ${key} = ${JSON.stringify(loadedValue)}`);
+	return loadedValue;
+	// return value !== null ? JSON.parse(value) : defaultValue;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+	console.log('DOM fully loaded and parsed');
 	const toggleButton = document.getElementById('toggleAdvancedOptions');
 	const advancedOptions = document.getElementById('advancedOptions');
 	const extractAudioToggle = document.getElementById('extractAudioToggle');
@@ -27,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	const clipDurationRow = document.getElementById('clipDurationRow');
 	const clipDurationDisplay = document.getElementById('clipDurationDisplay');
 
+	console.log('All DOM elements retrieved');
+
 	const startInputs = [hours, minutes, seconds];
 	const endInputs = [clipHours, clipMinutes, clipSeconds];
 	const allInputs = [...startInputs, ...endInputs];
@@ -37,23 +44,47 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Load preferences
 	const showAdvancedOptions = loadPreference('showAdvancedOptions', false);
 	const extractAudio = loadPreference('extractAudio', false);
+	extractAudioToggle.checked = extractAudio;
 	const noPlaylist = loadPreference('noPlaylist', false);
 	const clipEnabled = loadPreference('clipEnabled', false);
 
 	console.log('Loaded preferences:', { showAdvancedOptions, extractAudio, noPlaylist, clipEnabled });
 
 	function calculateSeconds(h, m, s) {
-		return (parseInt(h) || 0) * 3600 + (parseInt(m) || 0) * 60 + (parseInt(s) || 0);
+		const total = (parseInt(h) || 0) * 3600 + (parseInt(m) || 0) * 60 + (parseInt(s) || 0);
+		console.log(`Calculated seconds: ${total} from h:${h}, m:${m}, s:${s}`);
+		return total;
 	}
 
 	function formatDuration(totalSeconds) {
 		const hours = Math.floor(totalSeconds / 3600);
 		const minutes = Math.floor((totalSeconds % 3600) / 60);
 		const seconds = totalSeconds % 60;
-		return `${hours}h ${minutes}m ${seconds}s`;
+		const formatted = `${hours}h ${minutes}m ${seconds}s`;
+		console.log(`Formatted duration: ${formatted} from ${totalSeconds} seconds`);
+		return formatted;
 	}
 
+	function validateClipTiming() {
+		if (clipToggle.checked) {
+			const startTime = calculateSeconds(hours.value, minutes.value, seconds.value);
+			const endTime = calculateSeconds(clipHours.value, clipMinutes.value, clipSeconds.value);
+	        const duration = endTime - startTime;
+            if (duration < 1) {
+                alert("Clip duration must be at least 1 second");
+                return false;
+            }
+            if (startTime >= endTime) {
+                alert("End time must be greater than start time");
+                return false;
+            }
+		}
+		return true;
+	}
+
+
 	function updateAdvancedOptionsVisibility(show) {
+		console.log(`Updating advanced options visibility: ${show}`);
 		advancedOptions.style.display = show ? 'block' : 'none';
 		toggleButton.textContent = show ? 'Hide Advanced Options' : 'Show Advanced Options';
 	}
@@ -75,11 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function updateClipDuration(clipDuration) {
 		if (isNaN(clipDuration)) {
-			if (clipDuration <= 10 && (clipHours === 0 && clipMinutes === 0)) {
-				clipDurationDisplay.textContent = `Clip Duration: Invalid, must be <= 10 seconds.`
-				clipSeconds.value = 10;
-				console.warn('Invalid clip duration');
-			}
+			console.warn('Invalid clip duration');
+			clipDurationDisplay.textContent = `Clip Duration: Invalid`;
 		} else {
 			clipDurationDisplay.textContent = `Clip Duration: ${formatDuration(clipDuration)}`;
 			console.log('Clip duration updated:', formatDuration(clipDuration));
@@ -87,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	function updateClipInputs(enabled) {
+		console.log(`Updating clip inputs: ${enabled}`);
 		allInputs.forEach(input => {
 			if (input) {
 				input.disabled = !enabled;
@@ -124,18 +153,18 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
-	function handleClipSecondsBlur() {
-		let clipSecondsValue = parseInt(clipSeconds.value);
-		const clipHoursValue = parseInt(clipHours.value) || 0;
-		const clipMinutesValue = parseInt(clipMinutes.value) || 0;
+	// function handleClipSecondsBlur() {
+	// 	let clipSecondsValue = parseInt(clipSeconds.value);
+	// 	const clipHoursValue = parseInt(clipHours.value) || 0;
+	// 	const clipMinutesValue = parseInt(clipMinutes.value) || 0;
 
-		if (clipSecondsValue <= 10 && (clipHoursValue === 0 && clipMinutesValue === 0)) {
-			clipSeconds.value = 10;
-			console.log('Clip seconds adjusted to minimum: 10');
-		}
-		updateEndTime();
-		updateClipDuration();
-	}
+	// 	if (clipSecondsValue <= 10 && (clipHoursValue === 0 && clipMinutesValue === 0)) {
+	// 		clipSeconds.value = 10;
+	// 		console.log('Clip seconds adjusted to minimum: 10');
+	// 	}
+	// 	updateEndTime();
+	// 	updateClipDuration();
+	// }
 
 	// Set initial states
 	updateAdvancedOptionsVisibility(showAdvancedOptions);
@@ -158,10 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	if (extractAudioToggle) {
 		extractAudioToggle.addEventListener('change', function() {
 			const isChecked = this.checked;
+			console.log(`Extract audio toggle changed: ${isChecked}`);
 			this.value = isChecked ? 'true' : 'false';
 			savePreference('extractAudio', isChecked);
 			console.log('Extract audio preference saved:', isChecked);
-			this.value = this.checked;
+			// this.value = this.checked;
 
 			// Create or update hidden input for form submission
 			let xaudiohiddenInput = document.getElementById('extractAudioHidden');
@@ -171,45 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				xaudiohiddenInput.id = 'extractAudioHidden';
 				xaudiohiddenInput.name = 'extractAudio';
 				this.parentNode.appendChild(xaudiohiddenInput);
+				console.log('Created hidden input for extract audio');
 			}
 			xaudiohiddenInput.value = isChecked ? 'true' : 'false';
+			console.log(`Set hidden input value to ${xaudiohiddenInput.value}`);
 
-			if (isChecked) {
-				const formData = new FormData();
-				formData.append('url', document.getElementById('url').value);
-				formData.append('extract_audio', 'true');
-
-				fetch('/download', {
-					method: 'POST',
-					body: formData
-				})
-				.then(response => response.json())
-				.then(data => {
-					if (data.status === 'success' && data.download_url) {
-						// Trigger the file download by making a GET request to fetch-file
-						return fetch(data.download_url, {
-							method: 'GET'
-						});
-					} else {
-						throw new Error(data.message || 'Download failed');
-					}
-				})
-				.then(response => response.blob())
-				.then(blob => {
-					// Create the download link
-					const url = window.URL.createObjectURL(blob);
-					const a = document.createElement('a');
-					a.href = url;
-					a.download = data.download_filename;
-					document.body.appendChild(a);
-					a.click();
-					window.URL.revokeObjectURL(url);
-					a.remove();
-				})
-				.catch(error => {
-					console.error('Download failed:', error);
-				});
-			}
 		});
 	}
 
@@ -227,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			savePreference('clipEnabled', this.checked);
 			this.value = this.checked;
 			updateClipInputs(this.checked);
-
 			if (this.checked) { 
 				updateStartTime();
 				updateEndTime();
@@ -247,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	// Blur event for clipSeconds
-	clipSeconds.addEventListener('blur', handleClipSecondsBlur);
+	// clipSeconds.addEventListener('blur', handleClipSecondsBlur);
 
 	// Initial setup
 	updateClipInputs(clipEnabled); 
@@ -255,34 +250,96 @@ document.addEventListener('DOMContentLoaded', function() {
 		updateStartTime(); 
 		updateEndTime(); 
 	}
-});
 
-document.querySelector('form').addEventListener('submit', function (e) {
-	e.preventDefault(); // Prevent default form submission
+	document.querySelector('form').addEventListener('submit', function (e) {
+		e.preventDefault(); // Prevent default form submission
 
-	const formData = new FormData(this);
-
-	// Post the form data to the download route
-	fetch('/download', {
-		method: 'POST',
-		body: formData
-	})
-	.then(response => {
-		// Check if the response is OK (status code 200)
-		if (!response.ok) {
-			throw new error(`HTTP Error! status ${response.status}`);
+		if (!validateClipTiming()) {
+			return;
 		}
-		return response.json(); // Parse the JSON response
-	})
-	.then(data => {
-		if (data.status === 'success') {
-			console.log(`Redirecting to fetch file from ${data.download_url}`);
-			// Redirect to /fetch-file to trigger the download
-			window.location.href = data.download_url;
-		} else {
-			// Show error message in the status div
-			console.error(`Error from server`, data.message);
-			document.getElementById(`status`).innerText = data.message;
+
+		const formData = new FormData(this);
+
+		if (clipToggle.checked) {
+			formData.append('clip_start', `${hours.value}:${minutes.value}:${seconds.value}`);
+			formData.append('clip_end', `${clipHours.value}:${clipMinutes.value}:${clipSeconds.value}`);
+			formData.append('hours', `${hours.value}`);
+			formData.append('minutes', `${minutes.value}`);
+			formData.append('seconds', `${hours.value}`);
+			formData.append('clipHours', `${clipHours.value}`);
+			formData.append('clipMinutes', `${clipMinutes.value}`);
+			formData.append('clipSeconds', `${clipSeconds.value}`);
 		}
-	});
+
+		// Disable the submit button to prevent multiple submissions
+		const submitButton = document.querySelector('button[type="submit"]');
+		submitButton.disabled = true;
+		console.log("Submitting form data:", Array.from(formData.entries()));
+
+		// Post the form data to the download route
+		fetch('/download', {
+			method: 'POST',
+			body: formData,
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+
+            }
+		})
+		.then(response => response.json())
+		.then(data => {
+			// Re-enable the submit button after response
+			submitButton.disabled = false;
+			if (data.status === 'success') {
+				console.log(`Redirecting to fetch file from ${data.download_url}`);
+			// Check if audio extraction is enabled
+				if (extractAudioToggle.checked) {
+				// Create and display the audio download button
+					const audioDownloadBtn = document.createElement('a');
+					audioDownloadBtn.href = data.download_url;
+					audioDownloadBtn.className = 'btn';
+					audioDownloadBtn.textContent = 'Download Audio';
+					audioDownloadBtn.download = data.download_filename;
+					audioDownloadBtn.style = 'color:rgb(255,255,255)!important'
+
+					// Need a spacer
+					const spacer1 = document.createElement('br');
+					const spacer2 = document.createElement('br');
+
+					// Insert the button after the main download button
+					const mainDownloadBtn = document.querySelector('button.btn[type="submit"]');
+					if (mainDownloadBtn) {
+        				mainDownloadBtn.parentNode.insertBefore(spacer1, mainDownloadBtn.nextSibling);
+        				mainDownloadBtn.parentNode.insertBefore(spacer2, spacer1.nextSibling);
+        				mainDownloadBtn.parentNode.insertBefore(audioDownloadBtn, spacer2.nextSibling);
+        			} else {
+						console.error('Main download button not found');
+						document.querySelector('form').appendChild(spacer1);
+						document.querySelector('form').appendChild(spacer2);
+						document.querySelector('form').appendChild(audioDownloadBtn);
+					}
+					// Remove the button after 5 minutes
+					setTimeout(() => {
+						spacer1.remove();
+						spacer2.remove();
+						audioDownloadBtn.remove();
+				}, 300000); // 5 minutes in milliseconds
+				} else {
+					// Regular video download logic
+					window.location.href = data.download_url;
+				}
+			} else {
+				console.error(`Error from server`, data.message);
+				document.getElementById('status').innerText = data.message;
+			}
+		})
+		.catch(error => {
+			console.error('Download failed:', error);
+			document.getElementById('status').innerText = 'Download failed: ' + error.message;
+			// Re-enable the submit button on error
+			submitButton.disabled = false;
+
+		});
+	});	
 });
