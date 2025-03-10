@@ -50,7 +50,7 @@ Write-Host $randomKeyHex
 
 ## Appearance (WIP - will change over time)
 
-![Full Page](https://s.0x0.la/4iywiu)
+![Full Page](https://camo.githubusercontent.com/f792ec1a1426c7ae6b9ec1c916b638435a982b08dba96973d768af7906b600e6/68747470733a2f2f3078302e6c612f782f76646d2e706e67)
 ![Embeds for videos](https://0x0.la/i/2023/12/17-12.36-btrz.png)
 
 
