@@ -17,6 +17,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta property="og:locale" content="en_US">
 	<meta property="og:site_name" content="VDM - Video Download Manager">
+	<meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body style="background: #171717;overflow-x: hidden;">
 	<nav class="navbar navbar-expand-md bg-dark navbar-dark py-3" style="background:#0e0e0e;">
@@ -163,7 +164,7 @@
 														</div>
 														<div class="number-picker">
 															<div class="picker-label">Seconds</div>
-															<input id="clipSeconds" type="number" min="0" max="59" value="10">
+															<input id="clipSeconds" type="number" min="0" max="59" value="5">
 														</div>
 													</div>
 													<div id="clipResult"></div>

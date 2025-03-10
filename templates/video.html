@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" style="background: #171717;">
   <head>
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
-    <meta name="description" content="{{ video.title }}"/>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+		<meta name="description" content="{{ video.title }}"/>
     <title>VDM/Video Download Manager</title>
+    <!--
+		<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/fonts/material-icons.min.css">
+    <link rel="stylesheet" href="assets/css/Navbar-Right-Links-Dark-icons.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
+		-->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 		<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -13,13 +19,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fonts/material-icons.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/Navbar-Right-Links-Dark-icons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Off-Canvas-Sidebar-Drawer-Navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Sidebar-Menu-sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Sidebar-Menu.css') }}">
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="VDM - Video Download Manager" />
     <meta property="og:title" content="{{ video.movie }}" />
     <meta property="video:actor" content="{{ video.user }}" />
     <meta property="video:tag" content="{{ video.title }}" />
     <meta property="og:description" content="{{ video.title }}
-                                            (@{{ video.user }})" />
+		(@{{ video.user }})" />
     <meta property="og:image" content="{{ url_for('serve_data', filename=video.tmbfp) }}" />
     <meta property="og:url" content="{{ url_for('video_page', video_id=video.id) }}" />
     <meta property="og:type" content="video.other" />
@@ -35,92 +44,110 @@
     <meta name="twitter:player:stream:content_type" content="{{ content_type }}">
 		<meta name="twitter:player:width" content="1280" />
 		<meta name="twitter:player:height" content="720" />
-  </head>
+	</head>
   <body style="background: #171717;overflow-x: hidden;">
     <nav class="navbar navbar-dark navbar-expand-md bg-dark py-3" style="background: #0e0e0e!important;">
       <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="/">
-        <span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
-          <i class="material-icons">video_library</i>
-        </span>
-        <span style="color: rgb(255,255,255);font-size: 25px;">
-          <strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
-        </span>
-      </a>
-      <button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
-        <span class="visually-hidden">Toggle navigation</span>
-        <span class="navbar-toggler-icon"></span>
-      </button>
+				<a class="navbar-brand d-flex align-items-center" href="/">
+					<span class="bs-icon-sm bs-icon-rounded bs-icon-primary d-flex justify-content-center align-items-center me-2 bs-icon" style="background: #990000;">
+						<i class="material-icons">video_library</i>
+					</span>
+					<span style="color: rgb(255,255,255);font-size: 25px;">
+						<strong>V</strong>ideo <strong>D</strong>ownload <strong>M</strong>anager
+					</span>
+				</a>
+				<button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-5">
+					<span class="visually-hidden">Toggle navigation</span>
+					<span class="navbar-toggler-icon"></span>
+				</button>
         <div class="collapse navbar-collapse" id="navcol-5">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
               <a class="nav-link" href="https://github.com/samstarnes/vdm/" id="github-link">Github</a>
-            </li>
+						</li>
             <li class="nav-item">
               <a class="nav-link" href="/login" id="login-link"><s>Login</s></a>
               <div id="user-info">
                 <span id="username" style="display: none;">
                   <a href="#" id="username-link"></a>
-                    <div id="user-menu" style="display: none;">
-                      <a href="#">Settings</a>
-                      <a href="/logout" id="logout-link"><s>Logout</s></a>
-                    </div>
-                </span>
-              </div>
-            </li>
+									<div id="user-menu" style="display: none;">
+										<a href="#">Settings</a>
+										<a href="/logout" id="logout-link"><s>Logout</s></a>
+									</div>
+								</span>
+							</div>
+						</li>
             <li class="nav-item">
               <a class="nav-link" href="/register" id="login-link"><s>Register</s></a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-    <div class="container" style="color: rgb(255,255,255);">
-      <div id="videoContainer" data-hls="{{ url_for('serve_hls', video_id=video.id, filename=video.id + '.m3u8') }}"></div>
-      <h1>{{ video.title }}</h1>
-      <p>Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
-      <p>Index: {{ video.index }}</p>
-      <p>Video ID: {{ video.id }}</p>
-      <p>Uploaded by: {{ video.user }}</p>
-      <p>Duration: {{ video.length }}</p>
-      <p>Date Posted: {{ video.date_posted }}</p>
-      <p>Archive Date: {{ video.archive_date }}</p>
-      <p>File size (Bytes): {{ video.file_size_bytes }}</p>
-      <p>File size (Readable): {{ video.file_size_readable }}</p>
-      <p>Resolution: {{ video.resolution }}</p>
-      <p>Aspect Ratio: {{ video.aspect_ratio }}</p>
-      <p>Filename: {{ video.filename }}</p>
-      <p>JSON File: {{ video.json_file }}</p>
-      <p>Thumbnail: {{ video.thumbnail }}</p>
-      <p>Thumbnail FP: {{ video.tmbfp }}</p>
-      <p>mongoDB ID: {{ video._id }}</p>
-      <p>Download Link: {{ video.filename }}</p>
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          var videoContainer = document.getElementById('videoContainer');
-          var hlsPath = videoContainer.getAttribute('data-hls');
-          var videoElement = document.createElement('video');
-          videoElement.setAttribute('width', '100%');
-          videoElement.setAttribute('height', '100%');
-          videoElement.setAttribute('controls', '');
-          videoElement.setAttribute('preload', '');
-					videoElement.setAttribute('poster', 'static/poster.png');
-          if (Hls.isSupported()) {
-            var hls = new Hls();
-            hls.loadSource(hlsPath);
-            hls.attachMedia(videoElement);
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-              videoElement.play();
-            });
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+    <div class="container" style="color: #e1e1e1;">
+			<div class="row">
+				<div class="col-md-12">
+					<div id="videoContainer" data-hls="{{ url_for('serve_hls', video_id=video.id, filename=video.id + '.m3u8') }}"></div>
+					<h1 class="text-center">{{ video.title }}</h1>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-3 col-xxl-4 text-center">
+					<p>Date Posted: {{ video.date_posted }}</p>
+					<p>Video URL: <a href="{{ video.video_url }}">{{ video.video_url }}</a></p>
+					<p>Index: {{ video.index }}</p>
+					<p>Video ID: {{ video.id }}</p>
+					<p>mongoDB ID: {{ video._id }}</p>
+					<p>Archive Date: {{ video.archive_date }}</p>
+				</div>
+				<div class="col-md-6 col-xxl-4 text-center">
+					<p>Uploaded by: {{ video.user }}</p>
+					<p>Duration: {{ video.length }}</p>
+					<p>Resolution: {{ video.resolution }}</p>
+					<p>File size (Bytes): {{ video.file_size_bytes }}</p>
+					<p>File size (Readable): {{ video.file_size_readable }}</p>
+					<p>Aspect Ratio: {{ video.aspect_ratio }}</p>
+				</div>
+				<div class="col-md-3 col-xxl-4 text-center">
+					<p>Filename: {{ video.filename }}</p>
+					<p>JSON File: {{ video.json_file }}</p>
+					<p>Thumbnail: {{ video.thumbnail }}</p>
+					<p>Thumbnail FP: {{ video.tmbfp }}</p>
+					<p>Download Link: {{ video.filename }}</p>
+				</div>
+			</div>
+		</div>
+    <div class="container" style="color:rgb(255,255,255);"><script>
+			document.addEventListener('DOMContentLoaded', function() {
+				var videoContainer = document.getElementById('videoContainer');
+				var hlsPath = videoContainer.getAttribute('data-hls');
+				var videoElement = document.createElement('video');
+				videoElement.setAttribute('width', '100%');
+				videoElement.setAttribute('height', '100%');
+				videoElement.setAttribute('controls', '');
+				videoElement.setAttribute('preload', '');
+				videoElement.setAttribute('poster', 'static/poster.png');
+				if (Hls.isSupported()) {
+					var hls = new Hls();
+					hls.loadSource(hlsPath);
+					hls.attachMedia(videoElement);
+					hls.on(Hls.Events.MANIFEST_PARSED, function() {
+						videoElement.play();
+					});
           } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-            videoElement.src = hlsPath;
-            videoElement.addEventListener('canplay', function() {
-              videoElement.play();
-            });
-          }
-          videoContainer.appendChild(videoElement);
-        });
-      </script>
-    </div>
-  </body>
+					videoElement.src = hlsPath;
+					videoElement.addEventListener('canplay', function() {
+						videoElement.play();
+					});
+				}
+				videoContainer.appendChild(videoElement);
+			});
+		</script></div>
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+	  <script src="{{ url_for('static', filename='js/Off-Canvas-Sidebar-Drawer-Navbar-swipe.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Off-Canvas-Sidebar-Drawer-Navbar-off-canvas-sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/linkmanagement.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Sidebar-Menu-sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sidebartoggle.js') }}"></script>
+	</body>
 </html>
