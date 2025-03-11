@@ -520,7 +520,7 @@ def convert_to_hls(video_id, input_filepath, max_retries=3):
             with ffmpeg_lock:
                 # Attempt to run ffmpeg with a timeout
                 logging.info(f"HLS: 03 Starting ffmpeg version for {video_id}")
-                subprocess.run(command, check=True, timeout=3600)
+                subprocess.run(command, check=True, timeout=10800)
                 logging.info(f"HLS: 03 ffmpeg command for video_id {video_id} completed successfully.")
                 break # Break out of the loop if unsuccessful
         except TimeoutExpired:
@@ -886,7 +886,7 @@ def save_settings():
     )
     return jsonify({"message": "Settings updated successfully"})
 
-@app.route('/admin69420847', methods=['GET', 'POST'])
+@app.route('/admin', methods=['GET', 'POST'])
 def admin_page():
     directory_structure = get_directory_structure("/")
     # Load statistics.json data
@@ -1094,7 +1094,7 @@ def get_video_extension(directory, output):
 def is_image_corrupted(image_path):
     try:
         img = Image.open(image_path)
-        img.verify()  # verify that it is, in fact an image
+        img.verify()  # verify that it is, in fact, an image
         return False
     except (IOError, SyntaxError) as e:
         return True
@@ -1264,7 +1264,10 @@ def clean_and_load_json(filename):
         r"WARNING: \[youtube\] Skipping player responses from android clients",
         r"WARNING: \[TikTok\] Expecting value in '': line 1 column 1",
         r"WARNING: \[TikTok\] \d+: Failed to parse JSON",
-        r"ERROR: \[generic\] '298\+140' is not a valid URL."
+        r"ERROR: \[generic\] '298\+140' is not a valid URL.",
+        r"WARNING: \[twitter\] \d+: Not all metadata or media is available via syndication endpoint",
+        r"WARNING: ffmpeg not found\. The downloaded format may not be the best available\. Installing ffmpeg is strongly recommended: https://github\.com/yt-dlp/yt-dlp#dependencies",
+        r"WARNING: \[twitter\] 1899280296949809530: Not all metadata or media is available via syndication endpoint"
     ]
     def should_include_line(line):
         for pattern in error_patterns:
@@ -1326,8 +1329,12 @@ def download(url, args, cutout, output_base):
         logging.info(f"ddir: {ddir}")
         info_command = [
             yt_dlp_path,
+            '--user-agent', 'python-requests/2.32.3',
+            '--extractor-arg', 'twitter:api=syndication',
             '-f', 'bestvideo+bestaudio/best',
             '--skip-download',
+            '--yes-playlist',
+            '--restrict-filenames',
             '--print-json',
             '--cookies', 'cookies.txt',
             url
@@ -1338,31 +1345,35 @@ def download(url, args, cutout, output_base):
     try:
         if not info_result:
             logging.error(f"yt-dlp returned an empty result for URL {url}. stderr: {err}")
-            return None, f"Download failed for URL {url}. Error: Empty result received from yt-dlp"
+            return None, f"Step3.1: Download failed for URL {url}. Error: Empty result received from yt-dlp"
+        info_list = [json.loads(line) for line in info_result.splitlines() if line.strip()]
+        if not info_list:
+            logging.error(f"Step3.2: No valid video info found for URL {url}")
+            return None, f"Download failed for URL {url}. Error: No valid video information found"
         info = json.loads(info_result)
-        logging.info('Step 03: Set info variable in Step 3')
+        logging.info('Step 03.3: Set info variable in Step 3')
     except json.JSONDecodeError as e:
-        logging.error(f'Step 03: Failed to download:` {url}')
-        logging.error(f"Step 03: yt-dlp output is invalid JSON: {info_result}")
-        logging.error(f"Step 03: JSON decoding error: {str(e)}")
-        return None, f"Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
+        logging.error(f'Step 03.4: Failed to download:` {url}')
+        logging.error(f"Step 03.5: yt-dlp output is invalid JSON: {info_result}")
+        logging.error(f"Step 03.6: JSON decoding error: {str(e)}")
+        return None, f"Step3.7: Download failed for URL {url}. Error: Invalid JSON output from yt-dlp"
     except ValueError as e:
-        logging.error(f"Step 03: {str(e)}")
-        return None, f"Download failed for URL {url}. Error: {str(e)}"
+        logging.error(f"Step 03.8: {str(e)}")
+        return None, f"Step3.9: Download failed for URL {url}. Error: {str(e)}"
     except Exception as e:
-        logging.error(f"Step 03: Unexpected error: {str(e)}")
-        return None, f"Download failed for URL {url}. Error: {str(e)}"
+        logging.error(f"Step 03.10: Unexpected error: {str(e)}")
+        return None, f"Step3.11: Download failed for URL {url}. Error: {str(e)}"
 
     #############################################################
     # Step 04 ###################################################
     #############################################################
-    logging.info('Step 04: Sanitize title and output as variable')
+    logging.info(f'Step 04: Sanitize title and output as variable for video')
     # Use the video title as the output name if no output name was provided
     if isinstance(info, dict) and 'title' in info:
         display_title = info['title']
         logging.info('Step 04: P1')
     else:
-        display_title = "Title not found"
+        display_title = f"Title not found for video"
         logging.info('Step 04: P2')
     if not output_base:
         output = sanitize_filename(info['title'])
@@ -1373,7 +1384,7 @@ def download(url, args, cutout, output_base):
     else:
         output = sanitize_filename(output_base) # custom output names from form
         fulltitle = output
-        output = sanitize_filename(output_base) + "_" + info['id'] # custom output names from form
+        output = sanitize_filename(output_base) + f"_{index +1}_" + info['id'] # custom output names from form
         logging.warning('Step 04: Setting output to output_base')
         logging.info('Step 04: P4')
 
@@ -1400,12 +1411,16 @@ def download(url, args, cutout, output_base):
     intpath = '/app/data/public'
     progresscmd = [
         yt_dlp_path,
+        '--extractor-arg', 'twitter:api=syndication',
+        '--user-agent', 'python-requests/2.32.3',
         '-f', 'bestvideo+bestaudio/best',
         '-o', f'{intpath}/videos/{output}.%(ext)s',
         '--cookies', 'cookies.txt',
         '--newline',
         '--progress-template', '{ "progress percentage":"%(progress._percent_str)s","progress total":"%(progress._total_bytes_str)s","speed":"%(progress._speed_str)s","ETA":"%(progress._eta_str)s" }',
         '--force-overwrites',
+        '--restrict-filenames',
+        '--yes-playlist',
         url
     ]
     logging.info('Step 07: Set progresscmd')
@@ -1420,12 +1435,15 @@ def download(url, args, cutout, output_base):
     printline(f"Step 07: ytdlp output variable: {output}")
     jsoncmd = [
         yt_dlp_path,
+        '--extractor-arg', 'twitter:api=syndication',
+        '--user-agent', 'python-requests/2.32.3',
         '-f', 'bestvideo+bestaudio/best',
         '-o', f'{intpath}/videos/{output}.%(ext)s',
         '--print-json',
         '--cookies', 'cookies.txt',
         '--skip-download',
         '--force-overwrites',
+        '--yes-playlist',
         url
     ]
     logging.info('Step 07: Set jsoncmd')
@@ -1528,9 +1546,13 @@ def download(url, args, cutout, output_base):
     # Run yt-dlp to download the thumbnail (3/3 files)
     tmbs = [
         yt_dlp_path,
+        '--extractor-arg', 'twitter:api=syndication',
+        '--user-agent', 'python-requests/2.32.3',
         '--skip-download',
         '--write-thumbnail',
         '-o', f'{intpath}/thumbnails/{output}',
+        '--restrict-filenames',
+        '--yes-playlist',
         '--cookies', 'cookies.txt',
         url
     ]
